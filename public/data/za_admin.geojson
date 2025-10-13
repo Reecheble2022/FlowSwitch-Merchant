@@ -1,0 +1,81 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "South Africa",
+        "region": "Gauteng",
+        "district": "City of Johannesburg",
+        "adminCode": "ZA-GT-JHB"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [27.8, -26.4],
+          [28.3, -26.4],
+          [28.3, -25.9],
+          [27.8, -25.9],
+          [27.8, -26.4]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "South Africa",
+        "region": "Gauteng",
+        "district": "City of Tshwane",
+        "adminCode": "ZA-GT-TSH"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [28.0, -25.9],
+          [28.5, -25.9],
+          [28.5, -25.4],
+          [28.0, -25.4],
+          [28.0, -25.9]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "South Africa",
+        "region": "Western Cape",
+        "district": "City of Cape Town",
+        "adminCode": "ZA-WC-CPT"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [18.2, -34.2],
+          [18.9, -34.2],
+          [18.9, -33.7],
+          [18.2, -33.7],
+          [18.2, -34.2]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "South Africa",
+        "region": "KwaZulu-Natal",
+        "district": "eThekwini",
+        "adminCode": "ZA-KZN-DBN"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [30.7, -30.2],
+          [31.2, -30.2],
+          [31.2, -29.6],
+          [30.7, -29.6],
+          [30.7, -30.2]
+        ]]
+      }
+    }
+  ]
+}

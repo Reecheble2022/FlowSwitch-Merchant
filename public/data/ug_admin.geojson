@@ -1,0 +1,81 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "Uganda",
+        "region": "Central Region",
+        "district": "Kampala",
+        "adminCode": "UG-C-KLA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [32.4, 0.2],
+          [32.8, 0.2],
+          [32.8, 0.5],
+          [32.4, 0.5],
+          [32.4, 0.2]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "Uganda",
+        "region": "Central Region",
+        "district": "Wakiso",
+        "adminCode": "UG-C-WAK"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [32.2, 0.0],
+          [32.9, 0.0],
+          [32.9, 0.6],
+          [32.2, 0.6],
+          [32.2, 0.0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "Uganda",
+        "region": "Eastern Region",
+        "district": "Jinja",
+        "adminCode": "UG-E-JIN"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [33.1, 0.3],
+          [33.4, 0.3],
+          [33.4, 0.6],
+          [33.1, 0.6],
+          [33.1, 0.3]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "country": "Uganda",
+        "region": "Western Region",
+        "district": "Mbarara",
+        "adminCode": "UG-W-MBA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [30.5, -0.8],
+          [30.8, -0.8],
+          [30.8, -0.4],
+          [30.5, -0.4],
+          [30.5, -0.8]
+        ]]
+      }
+    }
+  ]
+}

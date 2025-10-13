@@ -1,0 +1,145 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Johannesburg",
+        "country": "South Africa",
+        "region": "Gauteng",
+        "population": 5635127,
+        "adminCode": "ZA-GT-JHB"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [28.0473, -26.2041]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Pretoria",
+        "country": "South Africa",
+        "region": "Gauteng",
+        "population": 2921488,
+        "adminCode": "ZA-GT-TSH"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [28.1879, -25.7479]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cape Town",
+        "country": "South Africa",
+        "region": "Western Cape",
+        "population": 4617560,
+        "adminCode": "ZA-WC-CPT"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [18.4241, -33.9249]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Durban",
+        "country": "South Africa",
+        "region": "KwaZulu-Natal",
+        "population": 3442361,
+        "adminCode": "ZA-KZN-DBN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [30.9598, -29.8587]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kampala",
+        "country": "Uganda",
+        "region": "Central Region",
+        "population": 3298000,
+        "adminCode": "UG-C-KLA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [32.5825, 0.3476]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Entebbe",
+        "country": "Uganda",
+        "region": "Central Region",
+        "population": 79700,
+        "adminCode": "UG-C-WAK"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [32.4635, 0.0559]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Jinja",
+        "country": "Uganda",
+        "region": "Eastern Region",
+        "population": 93061,
+        "adminCode": "UG-E-JIN"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [33.2041, 0.4244]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mbarara",
+        "country": "Uganda",
+        "region": "Western Region",
+        "population": 195013,
+        "adminCode": "UG-W-MBA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [30.6582, -0.6033]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sandton",
+        "country": "South Africa",
+        "region": "Gauteng",
+        "population": 222415,
+        "adminCode": "ZA-GT-JHB"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [28.0536, -26.1076]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Soweto",
+        "country": "South Africa",
+        "region": "Gauteng",
+        "population": 1271628,
+        "adminCode": "ZA-GT-JHB"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [27.8546, -26.2478]
+      }
+    }
+  ]
+}
