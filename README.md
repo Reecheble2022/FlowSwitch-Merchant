@@ -424,7 +424,7 @@ Proprietary - All rights reserved
 ## 🎉 Built By
 
 **Aever** - People Powered Platforms
-[https://aever.com](https://aever.com)
+[https://aever.com](https://aever.co.za)
 
 ---
 
