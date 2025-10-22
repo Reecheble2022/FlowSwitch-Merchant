@@ -1,7 +1,7 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Building2, Mail, Phone, MapPin } from 'lucide-react';
 import { useModal } from '../providers/ModalContext';
-import { supabase } from '../lib/supabase';
+import { useItemRegistrerMutation } from "../backend/api/sharedCrud"
 
 export default function AddMerchantModal() {
   const { activeModal, closeModal } = useModal();
@@ -11,37 +11,24 @@ export default function AddMerchantModal() {
     contactEmail: '',
     contactPhone: '',
     address: '',
+    password: '',
+    website: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('merchants')
-        .insert({
-          name: formData.name,
-          industry: formData.industry || null,
-          contact_email: formData.contactEmail || null,
-          contact_phone: formData.contactPhone || null,
-          address: formData.address || null,
-          status: 'active',
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const event = new CustomEvent('merchantCreated', { detail: data });
+  //=========================start
+  const [submitNewMerchant, {
+    data: merchantRegSuccessResponse,
+    isLoading: merchantRegProcessing,
+    isSuccess: merchantRegSucceeded,
+    isError: merchantRegFailed,
+    error: merchantRegError,
+  }] = useItemRegistrerMutation()
+  useEffect(() => {
+    if (merchantRegSucceeded) {
+      const { Data: newMerchantDetails } = merchantRegSuccessResponse || {}
+      const event = new CustomEvent('merchantCreated', { detail: newMerchantDetails });
       window.dispatchEvent(event);
-
       const toastEvent = new CustomEvent('showToast', {
         detail: {
           type: 'success',
@@ -49,11 +36,45 @@ export default function AddMerchantModal() {
         }
       });
       window.dispatchEvent(toastEvent);
-
       resetForm();
       closeModal();
-    } catch (error: any) {
-      console.error('Error creating merchant:', error);
+      setIsSubmitting(false);
+    } else if (merchantRegFailed) {
+      setIsSubmitting(false);
+      const { data: errorMsg } = merchantRegError || {}
+      const toastEvent = new CustomEvent('showToast', {
+        detail: {
+          type: 'error',
+          message: errorMsg || 'Failed to create merchant. Please try again.'
+        }
+      });
+      window.dispatchEvent(toastEvent);
+    }
+  }, [merchantRegSucceeded, merchantRegFailed]);
+  //=========================end
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        udid: formData.name?.replace(" ", "")?.toLowerCase(),
+        name: formData.name,
+        industry: formData.industry,
+        website: formData.website,
+        email: formData.email,
+        phone: parsedPhone?.format('E.164') || formData.phone,
+        physicalAddress: formData.address,
+        address: formData.address,
+        password: formData.password,
+        photo: photoUrl,
+        status: 'active',
+      };
+      submitNewMerchant({ entity: "merchant", data: payload })
+    } catch (error) {
       const toastEvent = new CustomEvent('showToast', {
         detail: {
           type: 'error',
@@ -61,8 +82,6 @@ export default function AddMerchantModal() {
         }
       });
       window.dispatchEvent(toastEvent);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -176,6 +195,23 @@ export default function AddMerchantModal() {
             </div>
           </div>
 
+          <div>
+            <label htmlFor="merchant-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              New password
+            </label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+              <input
+                id="merchant-password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                placeholder="+256700000000"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
@@ -187,14 +223,13 @@ export default function AddMerchantModal() {
             </button>
             <button
               type="submit"
-              disabled={!formData.name || isSubmitting}
-              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${
-                formData.name && !isSubmitting
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:shadow-lg hover:shadow-emerald-500/50'
-                  : 'bg-gray-400 cursor-not-allowed'
-              }`}
+              disabled={!formData.name || merchantRegProcessing || isSubmitting}
+              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${formData.name && !merchantRegProcessing && !isSubmitting
+                ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:shadow-lg hover:shadow-emerald-500/50'
+                : 'bg-gray-400 cursor-not-allowed'
+                }`}
             >
-              {isSubmitting ? 'Creating...' : 'Create Merchant'}
+              {(merchantRegProcessing || isSubmitting) ? 'Creating...' : 'Create Merchant'}
             </button>
           </div>
         </form>

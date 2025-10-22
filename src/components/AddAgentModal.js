@@ -2,10 +2,9 @@ import { useState, useEffect, FormEvent } from 'react';
 import { X, Upload, User, Mail, Phone, MapPin, CreditCard, Calendar, Users } from 'lucide-react';
 import { useModal } from '../providers/ModalContext';
 import { z } from 'zod';
-import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
+import { isValidPhoneNumber, format } from 'libphonenumber-js';
 import { calculateAge } from '../lib/ageUtils';
-import { supabase } from '../lib/supabase';
-import { useItemRegistrerMutation } from "../backend/api/sharedCrud"
+import { useItemRegistrerMutation, useItemsListReadrMutation } from "../backend/api/sharedCrud"
 
 const agentSchema = z.object({
   firstName: z.string().min(1, 'First name is required').regex(/^[a-zA-Z\s-]+$/, 'Only letters and hyphens allowed'),
@@ -43,12 +42,11 @@ export default function AddAgentModal() {
     merchantIds: [],
   });
   const [errors, setErrors] = useState({});
-  const [photoFile, setPhotoFile] = useState < File | null > (null);
-  const [photoPreview, setPhotoPreview] = useState < string > ('');
-  const [merchants, setMerchants] = useState([]);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
   const [merchantSearch, setMerchantSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [age, setAge] = useState < number | null > (null);
+  const [age, setAge] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   //=========================start
@@ -59,6 +57,35 @@ export default function AddAgentModal() {
     isError: agentRegFailed,
     error: agentRegError,
   }] = useItemRegistrerMutation()
+  useEffect(() => {
+    if (agentRegSucceeded) {
+      const { Data: newAgentDetails } = agentRegSuccessResponse || {}
+      const event = new CustomEvent('agentCreated', { detail: newAgentDetails });
+      window.dispatchEvent(event);
+      setHasUnsavedChanges(false);
+      closeModal();
+      const toastEvent = new CustomEvent('showToast', {
+        detail: {
+          type: 'success',
+          message: '✅ Agent created successfully'
+        }
+      });
+      window.dispatchEvent(toastEvent);
+      setIsSubmitting(false);
+      resetForm();
+      closeModal();
+    } else if (agentRegFailed) {
+      setIsSubmitting(false);
+      const { data: errorMsg } = agentRegError || {}
+      const toastEvent = new CustomEvent('showToast', {
+        detail: {
+          type: 'error',
+          message: errorMsg || 'Failed to create agent. Please try again.'
+        }
+      });
+      window.dispatchEvent(toastEvent);
+    }
+  }, [agentRegSucceeded, agentRegFailed]);
   //=========================end
 
   useEffect(() => {
@@ -85,16 +112,21 @@ export default function AddAgentModal() {
     setHasUnsavedChanges(hasChanges || photoFile !== null);
   }, [formData, photoFile]);
 
+  const [fetchMerchantsFn, { data: merchantsResponse, isLoading: merchantsLoading, isError: merchantsFetchFailed }] = useItemsListReadrMutation()
   const fetchMerchants = async () => {
-    const { data, error } = await supabase
-      .from('merchants')
-      .select('id, name, industry')
-      .order('name');
-
-    if (!error && data) {
-      setMerchants(data);
-    }
+    fetchMerchantsFn({ entity: "merchant", page: 1 });
   };
+  const merchants = useSelector(st => selectList(st, "merchant"))
+
+  //---- profile image ----
+  const [uploadNewImage, {
+    data: fileUploadSuccessResponse,
+    isLoading: fileUploadProcessing,
+    isSuccess: fileUploadSucceeded,
+    isError: fileUploadFailed,
+    error: fileUploadError,
+  }] = useFileUploaderMutation()
+  const { Data: { url: photoUrl } = {} } = fileUploadSuccessResponse || {}
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -110,6 +142,14 @@ export default function AddAgentModal() {
       setPhotoFile(file);
       setPhotoPreview(URL.createObjectURL(file));
       setErrors(prev => ({ ...prev, photo: undefined }));
+      const fData = new FormData();
+      fData.set('file', file);
+      uploadNewImage({
+        entity: "fileupload",
+        data: fData,
+      })
+    } else {
+      setPreview(null);
     }
   };
 
@@ -120,7 +160,6 @@ export default function AddAgentModal() {
         setErrors(prev => ({ ...prev, phone: 'Invalid phone number for selected country' }));
         return false;
       }
-
       agentSchema.parse(formData);
       setErrors({});
       return true;
@@ -139,84 +178,26 @@ export default function AddAgentModal() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) {
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      let photoUrl = '';
-
-      if (photoFile) {
-        const fileExt = photoFile.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('agent-photos')
-          .upload(fileName, photoFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('agent-photos')
-          .getPublicUrl(fileName);
-
-        photoUrl = urlData.publicUrl;
+      const parsedPhone = format(formData.phone, formData.nationality);
+      const payload = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        category: "Individuals",
+        phone: parsedPhone?.format('E.164') || formData.phone,
+        email: formData.email,
+        physicalAddress: formData.reportedAddr,
+        nationality: formData.nationality,
+        dateOfBirth: formData.dateOfBirth,
+        photo: photoUrl
       }
-
-      const parsedPhone = parsePhoneNumber(formData.phone, formData.nationality);
-
-      const { data: agent, error: agentError } = await supabase
-        .from('agents')
-        .insert({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: parsedPhone?.format('E.164') || formData.phone,
-          email: formData.email || null,
-          reported_address: formData.reportedAddr || null,
-          national_id: formData.nationalId || null,
-          nationality: formData.nationality,
-          date_of_birth: formData.dateOfBirth || null,
-          gender: formData.gender,
-          photo_url: photoUrl || null,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (agentError) throw agentError;
-
-      if (formData.merchantIds.length > 0) {
-        const assignments = formData.merchantIds.map(merchantId => ({
-          agent_id: agent.id,
-          merchant_id: merchantId,
-        }));
-
-        const { error: assignError } = await supabase
-          .from('agent_merchants')
-          .insert(assignments);
-
-        if (assignError) throw assignError;
-      }
-
-      const event = new CustomEvent('agentCreated', { detail: agent });
-      window.dispatchEvent(event);
-
-      setHasUnsavedChanges(false);
-      closeModal();
-
-      const toastEvent = new CustomEvent('showToast', {
-        detail: {
-          type: 'success',
-          message: '✅ Agent created successfully'
-        }
-      });
-      window.dispatchEvent(toastEvent);
-
+      submitNewAgent({ entity: "agent", data: payload })
       resetForm();
     } catch (error) {
-      console.error('Error creating agent:', error);
       const toastEvent = new CustomEvent('showToast', {
         detail: {
           type: 'error',
@@ -224,8 +205,6 @@ export default function AddAgentModal() {
         }
       });
       window.dispatchEvent(toastEvent);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -236,7 +215,6 @@ export default function AddAgentModal() {
       phone: '',
       email: '',
       reportedAddr: '',
-      nationalId: '',
       nationality: 'UG',
       dateOfBirth: '',
       gender: 'male',
@@ -271,12 +249,14 @@ export default function AddAgentModal() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [activeModal, hasUnsavedChanges]);
 
-  const filteredMerchants = merchants.filter(m =>
+  const filteredMerchants = (merchants || []).filter(m =>
     m.name.toLowerCase().includes(merchantSearch.toLowerCase()) ||
     (m.industry && m.industry.toLowerCase().includes(merchantSearch.toLowerCase()))
   );
 
-  if (activeModal !== 'addAgent') return null;
+  if (activeModal !== 'addAgent') {
+    return null;
+  }
 
   const isFormValid = formData.firstName && formData.lastName && formData.phone &&
     formData.nationality && Object.keys(errors).length === 0;
@@ -580,19 +560,19 @@ export default function AddAgentModal() {
               type="button"
               onClick={handleClose}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              disabled={isSubmitting}
+              disabled={agentRegProcessing || isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!isFormValid || isSubmitting}
-              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${isFormValid && !isSubmitting
+              disabled={!isFormValid || agentRegProcessing || isSubmitting}
+              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${isFormValid && !agentRegProcessing && !isSubmitting
                 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:shadow-lg hover:shadow-emerald-500/50'
                 : 'bg-gray-400 cursor-not-allowed'
                 }`}
             >
-              {isSubmitting ? 'Creating...' : 'Create Agent'}
+              {(agentRegProcessing || isSubmitting) ? 'Creating...' : 'Create Agent'}
             </button>
           </div>
         </form>

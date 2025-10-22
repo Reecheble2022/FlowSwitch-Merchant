@@ -144,7 +144,6 @@ export default function SchedulePromptModal({ isOpen, onClose, agentIds, onSucce
           message,
           scheduled_at: scheduledAt,
           status: 'pending',
-          created_by: (await supabase.auth.getUser()).data.user?.id || 'system',
         }))
       );
 
