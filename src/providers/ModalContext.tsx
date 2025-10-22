@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-type ModalType = 'addAgent' | 'addMerchant' | null;
+type ModalType = 'addAgent' | 'addMerchant' | 'merchantSignup' | null;
 
 interface ModalContextType {
   activeModal: ModalType;

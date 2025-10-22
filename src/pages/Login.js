@@ -1,26 +1,26 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { MerchantRegistrationTriggerButton } from "../components/merchantRegistrationTriggerButton";
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { user, loading: loginProcessing, login: submitLoginForm, logout, loginFailed, loginErrorMessage } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      await login(email, password);
+      await submitLoginForm(email, password);
       navigate('/');
-    } catch (err: any) {
+    } catch (err) {
       setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);
@@ -75,17 +75,14 @@ export function Login() {
               type="submit"
               className="w-full"
               size="lg"
-              disabled={loading}
+              disabled={loginProcessing}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loginProcessing ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
-            <p className="text-xs text-center text-slate-600 dark:text-slate-400">
-              Test credentials:<br />
-              <span className="font-mono">admin@flowswitch.dev</span> / <span className="font-mono">Admin123!</span>
-            </p>
+            <MerchantRegistrationTriggerButton />
           </div>
         </div>
       </div>

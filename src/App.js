@@ -16,6 +16,7 @@ import { Settings } from './pages/Settings';
 import { Float } from './pages/Float';
 import AddAgentModal from './components/AddAgentModal';
 import AddMerchantModal from './components/AddMerchantModal';
+import MerchantSignupModal from './components/MerchantSignupModal'
 import Toast from './components/Toast';
 
 function App() {
@@ -120,6 +121,7 @@ function App() {
           </Routes>
           <AddAgentModal />
           <AddMerchantModal />
+            <MerchantSignupModal />
           <Toast />
         </BrowserRouter>
       </ModalProvider>

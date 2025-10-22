@@ -17,11 +17,9 @@ export function Dashboard() {
 
   useEffect(() => {
     loadData();
-
     const handleAgentCreated = () => {
       loadData();
     };
-
     window.addEventListener('agentCreated', handleAgentCreated as EventListener);
     return () => window.removeEventListener('agentCreated', handleAgentCreated as EventListener);
   }, []);
@@ -32,7 +30,6 @@ export function Dashboard() {
         dashboard.getKPIs(),
         dashboard.getRecentActivity(10)
       ]);
-
       setKpis(kpisData);
       setActivity(activityData);
     } catch (error) {

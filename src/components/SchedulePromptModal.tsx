@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, Clock, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 interface SchedulePromptModalProps {
   isOpen: boolean;
@@ -91,27 +90,22 @@ export default function SchedulePromptModal({ isOpen, onClose, agentIds, onSucce
     const occurrences: string[] = [];
     const start = new Date(`${startDate}T${startTime}`);
     const end = endDate ? new Date(`${endDate}T23:59:59`) : new Date(start.getTime() + 365 * 24 * 60 * 60 * 1000);
-
     if (frequency === 'once') {
       occurrences.push(start.toISOString());
       return occurrences;
     }
-
     let current = new Date(start);
     let count = 0;
     const maxOccurrences = 1000;
-
     while (current <= end && count < maxOccurrences) {
       if (frequency === 'weekly' && !daysOfWeek.includes(current.getDay())) {
         current = addTime(current, frequency);
         continue;
       }
-
       occurrences.push(current.toISOString());
       count++;
       current = addTime(current, frequency);
     }
-
     return occurrences;
   };
 
@@ -147,11 +141,9 @@ export default function SchedulePromptModal({ isOpen, onClose, agentIds, onSucce
         }))
       );
 
-      const { error: insertError } = await supabase
-        .from('prompt_schedules')
-        .insert(schedules);
-
-      if (insertError) throw insertError;
+      //TODO: Send schedules to backend
+      // const { error: insertError } = await supabase.from('prompt_schedules').insert(schedules);
+      // if (insertError) throw insertError;
 
       showToast('success', `✅ Scheduled ${schedules.length} prompts for ${agentIds.length} agent(s)`);
       onSuccess?.();
