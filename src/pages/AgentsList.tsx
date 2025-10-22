@@ -8,7 +8,7 @@ import { Card } from '../components/ui/Card';
 import { Users, Search, Download, FileSpreadsheet, Printer, Eye, Plus } from 'lucide-react';
 import { formatRelativeTime, getCategoryColor, getStatusColor } from '../lib/utils';
 import { exportToCSV, exportToXLSX, printTable } from '../lib/export';
-import { useModal } from '../contexts/ModalContext';
+import { useModal } from '../providers/ModalContext';
 import type { Agent, Merchant } from '../types';
 
 export function AgentsList() {

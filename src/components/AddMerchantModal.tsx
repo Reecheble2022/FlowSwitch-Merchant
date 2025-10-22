@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { X, Building2, Mail, Phone, MapPin } from 'lucide-react';
-import { useModal } from '../contexts/ModalContext';
+import { useModal } from '../providers/ModalContext';
 import { supabase } from '../lib/supabase';
 
 export default function AddMerchantModal() {

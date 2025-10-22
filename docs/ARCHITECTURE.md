@@ -500,7 +500,7 @@ CREATE POLICY "Users can view assigned agents"
 - `chat/ChatPane.tsx` - Prompt builder interface
 - `ui/` - Design system (Card, Button, Modal, Badge, etc.)
 
-#### `/src/contexts/`
+#### `/src/providers/`
 
 **Purpose:** React contexts for global state
 

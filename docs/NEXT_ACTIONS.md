@@ -152,7 +152,7 @@ Polish dark mode with better contrast ratios and consistent color usage.
 
 **Files to Touch:**
 - `src/index.css` (dark mode Tailwind classes)
-- `src/contexts/ThemeContext.tsx` (persistence)
+- `src/providers/ThemeContext.tsx` (persistence)
 - All components (audit pass)
 
 ---
@@ -385,7 +385,7 @@ Use Supabase real-time subscriptions to auto-refresh data without polling.
 - Notification toasts on background changes
 
 **Files to Touch:**
-- `src/contexts/RealtimeContext.tsx` (new)
+- `src/providers/RealtimeContext.tsx` (new)
 - `src/pages/Dashboard.tsx` (subscribe)
 - `src/lib/supabase.ts` (subscription helpers)
 

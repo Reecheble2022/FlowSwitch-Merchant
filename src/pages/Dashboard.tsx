@@ -6,7 +6,7 @@ import { KPICard } from '../components/ui/KPICard';
 import { GradientButton } from '../components/ui/GradientButton';
 import { Users, CheckCircle, Clock, Building2, TrendingUp, ArrowRight, Zap, Plus } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
-import { useModal } from '../contexts/ModalContext';
+import { useModal } from '../providers/ModalContext';
 import type { DashboardKPIs, ActivityItem } from '../types';
 
 export function Dashboard() {

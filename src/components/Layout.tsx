@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../providers/AuthContext';
+import { useTheme } from '../providers/ThemeContext';
 import {
   LayoutDashboard,
   Users,
@@ -18,7 +18,6 @@ import {
   Bell,
   Wallet
 } from 'lucide-react';
-import { Button } from './ui/Button';
 
 interface LayoutProps {
   children: ReactNode;

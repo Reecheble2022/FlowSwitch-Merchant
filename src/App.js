@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { ModalProvider } from './contexts/ModalContext';
+import { AuthProvider } from './providers/AuthContext';
+import { ThemeProvider } from './providers/ThemeContext';
+import { ModalProvider } from './providers/ModalContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';

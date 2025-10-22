@@ -1,10 +1,11 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { X, Upload, User, Mail, Phone, MapPin, CreditCard, Calendar, Users } from 'lucide-react';
-import { useModal } from '../contexts/ModalContext';
+import { useModal } from '../providers/ModalContext';
 import { z } from 'zod';
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
 import { calculateAge } from '../lib/ageUtils';
 import { supabase } from '../lib/supabase';
+import { useItemRegistrerMutation } from "../backend/api/sharedCrud"
 
 const agentSchema = z.object({
   firstName: z.string().min(1, 'First name is required').regex(/^[a-zA-Z\s-]+$/, 'Only letters and hyphens allowed'),
@@ -19,8 +20,6 @@ const agentSchema = z.object({
   merchantIds: z.array(z.string()),
 });
 
-type AgentFormData = z.infer<typeof agentSchema>;
-
 const countries = [
   { code: 'UG', name: 'Uganda', flag: '🇺🇬' },
   { code: 'ZA', name: 'South Africa', flag: '🇿🇦' },
@@ -29,15 +28,9 @@ const countries = [
   { code: 'NG', name: 'Nigeria', flag: '🇳🇬' },
 ];
 
-interface Merchant {
-  id: string;
-  name: string;
-  industry?: string;
-}
-
 export default function AddAgentModal() {
   const { activeModal, closeModal, openModal } = useModal();
-  const [formData, setFormData] = useState<AgentFormData>({
+  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     phone: '',
@@ -49,14 +42,24 @@ export default function AddAgentModal() {
     gender: 'male',
     merchantIds: [],
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof AgentFormData, string>>>({});
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string>('');
-  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [errors, setErrors] = useState({});
+  const [photoFile, setPhotoFile] = useState < File | null > (null);
+  const [photoPreview, setPhotoPreview] = useState < string > ('');
+  const [merchants, setMerchants] = useState([]);
   const [merchantSearch, setMerchantSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [age, setAge] = useState<number | null>(null);
+  const [age, setAge] = useState < number | null > (null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  //=========================start
+  const [submitNewAgent, {
+    data: agentRegSuccessResponse,
+    isLoading: agentRegProcessing,
+    isSuccess: agentRegSucceeded,
+    isError: agentRegFailed,
+    error: agentRegError,
+  }] = useItemRegistrerMutation()
+  //=========================end
 
   useEffect(() => {
     if (activeModal === 'addAgent') {
@@ -93,7 +96,7 @@ export default function AddAgentModal() {
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
@@ -110,9 +113,9 @@ export default function AddAgentModal() {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = () => {
     try {
-      const phoneValid = isValidPhoneNumber(formData.phone, formData.nationality as any);
+      const phoneValid = isValidPhoneNumber(formData.phone, formData.nationality);
       if (!phoneValid) {
         setErrors(prev => ({ ...prev, phone: 'Invalid phone number for selected country' }));
         return false;
@@ -123,9 +126,9 @@ export default function AddAgentModal() {
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const newErrors: Partial<Record<keyof AgentFormData, string>> = {};
+        const newErrors = {};
         error.errors.forEach(err => {
-          const field = err.path[0] as keyof AgentFormData;
+          const field = err.path[0];
           newErrors[field] = err.message;
         });
         setErrors(newErrors);
@@ -134,7 +137,7 @@ export default function AddAgentModal() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -162,7 +165,7 @@ export default function AddAgentModal() {
         photoUrl = urlData.publicUrl;
       }
 
-      const parsedPhone = parsePhoneNumber(formData.phone, formData.nationality as any);
+      const parsedPhone = parsePhoneNumber(formData.phone, formData.nationality);
 
       const { data: agent, error: agentError } = await supabase
         .from('agents')
@@ -212,7 +215,7 @@ export default function AddAgentModal() {
       window.dispatchEvent(toastEvent);
 
       resetForm();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating agent:', error);
       const toastEvent = new CustomEvent('showToast', {
         detail: {
@@ -259,7 +262,7 @@ export default function AddAgentModal() {
   };
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleEscape = (e) => {
       if (e.key === 'Escape' && activeModal === 'addAgent') {
         handleClose();
       }
@@ -276,7 +279,7 @@ export default function AddAgentModal() {
   if (activeModal !== 'addAgent') return null;
 
   const isFormValid = formData.firstName && formData.lastName && formData.phone &&
-                      formData.nationality && Object.keys(errors).length === 0;
+    formData.nationality && Object.keys(errors).length === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -306,9 +309,8 @@ export default function AddAgentModal() {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                      errors.firstName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.firstName ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="John"
                   />
                 </div>
@@ -326,9 +328,8 @@ export default function AddAgentModal() {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                      errors.lastName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.lastName ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="Obbi"
                   />
                 </div>
@@ -364,9 +365,8 @@ export default function AddAgentModal() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                      errors.phone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="+256781234567"
                   />
                 </div>
@@ -384,9 +384,8 @@ export default function AddAgentModal() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="john@example.com"
                   />
                 </div>
@@ -423,9 +422,8 @@ export default function AddAgentModal() {
                     type="text"
                     value={formData.nationalId}
                     onChange={(e) => setFormData(prev => ({ ...prev, nationalId: e.target.value.toUpperCase() }))}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
-                      errors.nationalId ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${errors.nationalId ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     placeholder="CF12345"
                   />
                 </div>
@@ -469,12 +467,11 @@ export default function AddAgentModal() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, gender: option.value as any }))}
-                      className={`px-4 py-2 rounded-lg border transition-all ${
-                        formData.gender === option.value
-                          ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white border-transparent'
-                          : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-emerald-500'
-                      }`}
+                      onClick={() => setFormData(prev => ({ ...prev, gender: option.value }))}
+                      className={`px-4 py-2 rounded-lg border transition-all ${formData.gender === option.value
+                        ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white border-transparent'
+                        : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-emerald-500'
+                        }`}
                     >
                       {option.label}
                     </button>
@@ -526,9 +523,8 @@ export default function AddAgentModal() {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, merchantIds: [] }))}
-                      className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ${
-                        formData.merchantIds.length === 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
-                      }`}
+                      className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 ${formData.merchantIds.length === 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -550,9 +546,8 @@ export default function AddAgentModal() {
                               : [...prev.merchantIds, merchant.id]
                           }));
                         }}
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${
-                          formData.merchantIds.includes(merchant.id) ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
-                        }`}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${formData.merchantIds.includes(merchant.id) ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
+                          }`}
                       >
                         <input
                           type="checkbox"
@@ -592,11 +587,10 @@ export default function AddAgentModal() {
             <button
               type="submit"
               disabled={!isFormValid || isSubmitting}
-              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${
-                isFormValid && !isSubmitting
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:shadow-lg hover:shadow-emerald-500/50'
-                  : 'bg-gray-400 cursor-not-allowed'
-              }`}
+              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${isFormValid && !isSubmitting
+                ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:shadow-lg hover:shadow-emerald-500/50'
+                : 'bg-gray-400 cursor-not-allowed'
+                }`}
             >
               {isSubmitting ? 'Creating...' : 'Create Agent'}
             </button>
