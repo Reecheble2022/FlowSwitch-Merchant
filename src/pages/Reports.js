@@ -3,57 +3,56 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
-import { FileText, Download, Copy, MapPin, TrendingUp, AlertCircle } from 'lucide-react';
-import { buildAgentReport, buildPortfolioReport, AgentReport, PortfolioReport } from '../services/reportBuilder';
-import { supabase } from '../lib/supabase';
-import type { Agent, Merchant } from '../types';
+import { FileText, Download, Copy, MapPin, AlertCircle } from 'lucide-react';
+import { buildAgentReport, buildPortfolioReport } from '../services/reportBuilder';
+import { useItemDetailsViewrMutation, useItemsListReadrMutation } from "../backend/api/sharedCrud"
+import { selectList, selectOneItemByGuid } from "../backend/features/sharedMainState"
 
 export function Reports() {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [merchants, setMerchants] = useState<Merchant[]>([]);
-  const [selectedMerchant, setSelectedMerchant] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState('');
+  const [selectedMerchantGuid, setSelectedMerchantGuid] = useState('');
+  const [selectedAgentGuid, setSelectedAgentGuid] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
-  const [report, setReport] = useState<AgentReport | null>(null);
-  const [portfolioReport, setPortfolioReport] = useState<PortfolioReport | null>(null);
-  const [error, setError] = useState<string>('');
+  const [report, setReport] = useState(null);
+  const [portfolioReport, setPortfolioReport] = useState(null);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+
+  const [fetchMerchantsFn, {
+    isLoading: merchantsLoading,
+    isSuccess: merchantsFetchSucceeded,
+    isError: merchantsFetchFailed
+  }] = useItemsListReadrMutation()
+
+  const [fetchAgentsFn, {
+    isLoading: agentsLoading,
+    isSuccess: agentsFetchSucceeded,
+    isError: agentsFetchFailed
+  }] = useItemsListReadrMutation()
+
+  const [fetchAgentDetailsFn, {
+    isLoading: agentDetailsLoading,
+    isSuccess: agentDetailsFetchSucceeded,
+    isError: agentDetailsFetchFailed
+  }] = useItemDetailsViewrMutation()
+
+  const [fetchAgentVerificationsFn, {
+    isLoading: agentVerificationsLoading,
+    isSuccess: agentVerificationsFetchSucceeded,
+    isError: agentVerificationsFetchFailed
+  }] = useItemsListReadrMutation()
+
+  const merchants = useSelector(st => selectList(st, "merchant"))
+  const agents = useSelector(st => selectList(st, "agent"))
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData(page);
+  }, [page]);
 
-  async function loadData() {
-    const { data: agentsData } = await supabase
-      .from('agents')
-      .select('id, first_name, last_name, status')
-      .order('first_name');
-
-    const { data: merchantsData } = await supabase
-      .from('merchants')
-      .select('*')
-      .order('name');
-
-    if (agentsData) {
-      const agentsWithMerchants = await Promise.all(
-        agentsData.map(async (agent) => {
-          const { data: assignments } = await supabase
-            .from('agent_merchants')
-            .select('merchant:merchants(name)')
-            .eq('agent_id', agent.id)
-            .limit(1)
-            .single();
-
-          return {
-            ...agent,
-            merchant: assignments?.merchant,
-          };
-        })
-      );
-      setAgents(agentsWithMerchants as any);
-    }
-    if (merchantsData) setMerchants(merchantsData);
+  const loadData = async (page) => {
+    // fetchAgentsFn({ entity: "agent", page });
+    fetchMerchantsFn({ entity: "merchant", page });
   }
 
   async function handleBuildReport() {
@@ -63,9 +62,9 @@ export function Reports() {
     setError('');
 
     try {
-      if (selectedAgent) {
+      if (selectedAgentGuid) {
         const dateRange = startDate && endDate ? { start: startDate, end: endDate } : undefined;
-        const agentReport = await buildAgentReport(selectedAgent, dateRange);
+        const agentReport = await buildAgentReport(dateRange, (agents || []).find(agt => agt.guid === selectedAgentGuid));
         if (agentReport) {
           setReport(agentReport);
         } else {
@@ -73,7 +72,7 @@ export function Reports() {
         }
       } else {
         const filters = {
-          merchantId: selectedMerchant || undefined,
+          merchantId: selectedMerchantGuid || undefined,
           startDate: startDate || undefined,
           endDate: endDate || undefined,
         };
@@ -131,13 +130,17 @@ export function Reports() {
                 Merchant (optional)
               </label>
               <select
-                value={selectedMerchant}
-                onChange={(e) => setSelectedMerchant(e.target.value)}
+                value={selectedMerchantGuid}
+                onChange={(e) => {
+                  const merchantGuid = e.target.value
+                  setSelectedMerchantGuid(merchantGuid);
+                  fetchAgentsFn({ entity: "agent", filters: { merchantGuid } })
+                }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
               >
                 <option value="">All Merchants</option>
-                {merchants.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+                {(merchants || []).map(m => (
+                  <option key={m.guid} value={m.guid}>{m.name}</option>
                 ))}
               </select>
             </div>
@@ -147,14 +150,15 @@ export function Reports() {
                 Agent (optional)
               </label>
               <select
-                value={selectedAgent}
-                onChange={(e) => setSelectedAgent(e.target.value)}
+                value={selectedAgentGuid}
+                disabled={merchantsLoading || agentsLoading}
+                onChange={(e) => setSelectedAgentGuid(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
               >
-                <option value="">Portfolio Report (All Agents)</option>
-                {agents.map(a => (
-                  <option key={a.id} value={a.id}>
-                    {a.first_name} {a.last_name}
+                <option value="">{(merchantsLoading || agentsLoading) ? "Loading..." : "Portfolio Report (All Agents)"}</option>
+                {(agents || []).map(agent => (
+                  <option key={agent.guid} value={agent.guid}>
+                    {agent.firstName} {agent.lastName}
                   </option>
                 ))}
               </select>
@@ -470,7 +474,7 @@ export function Reports() {
                   <div className="space-y-4">
                     {portfolioReport.agents.slice(0, 5).map((agentReport) => (
                       <div
-                        key={agentReport.agent.id}
+                        key={agentReport.agent.guid}
                         className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-2"
                       >
                         <div className="flex items-center justify-between">

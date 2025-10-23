@@ -9,12 +9,11 @@ import { Users, Search, Download, FileSpreadsheet, Printer, Eye, Plus } from 'lu
 import { formatRelativeTime, getCategoryColor, getStatusColor } from '../lib/utils';
 import { exportToCSV, exportToXLSX, printTable } from '../lib/export';
 import { useModal } from '../providers/ModalContext';
-import type { Agent, Merchant } from '../types';
 
 export function AgentsList() {
   const { openModal } = useModal();
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [agents, setAgents] = useState([]);
+  const [merchants, setMerchants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -31,8 +30,8 @@ export function AgentsList() {
       loadAgents();
     };
 
-    window.addEventListener('agentCreated', handleAgentCreated as EventListener);
-    return () => window.removeEventListener('agentCreated', handleAgentCreated as EventListener);
+    window.addEventListener('agentCreated', handleAgentCreated);
+    return () => window.removeEventListener('agentCreated', handleAgentCreated);
   }, []);
 
   useEffect(() => {
@@ -175,7 +174,7 @@ export function AgentsList() {
           >
             <option value="">All Merchants</option>
             {merchants.map((merchant) => (
-              <option key={merchant.id} value={merchant.id}>
+              <option key={merchant.guid} value={merchant.guid}>
                 {merchant.name}
               </option>
             ))}
@@ -294,7 +293,7 @@ export function AgentsList() {
                       {formatRelativeTime(agent.last_seen_at)}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link to={`/agents/${agent.id}`}>
+                      <Link to={`/agents/${agent.guid}`}>
                         <Button variant="ghost" size="sm">
                           <Eye className="w-4 h-4" />
                         </Button>

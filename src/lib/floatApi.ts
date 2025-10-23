@@ -501,12 +501,12 @@ export const voucherApi = {
         redeemed_at: timestamp,
         redeemed_by: userId,
       })
-      .eq('id', voucher.id);
+      .eq('id', voucher.guid);
 
     const { data: redemption, error: redeemError } = await supabase
       .from('voucher_redeems')
       .insert({
-        voucher_id: voucher.id,
+        voucher_id: voucher.guid,
         redeemer_account_id: redeemerAccountId,
         amount: voucher.amount,
         location_lat: locationLat || null,
@@ -522,7 +522,7 @@ export const voucherApi = {
     return redemption;
   },
 
-  async void(voucherId: string, reason: string): Promise<void> {
+  async void(voucherId, reason) {
     const { data: voucher } = await supabase
       .from('vouchers')
       .select('*')

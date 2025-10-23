@@ -11,7 +11,7 @@ const merchantAdaptor = createEntityAdapter({ selectId: (data) => data.guid || d
 const agentAdaptor = createEntityAdapter({ selectId: (data) => data._id })
 const notificationAdaptor = createEntityAdapter({ selectId: (data) => data.guid || data._id })
 const messageAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
-const activeChatMessageAdaptor = createEntityAdapter({ selectId: (data) => data.id })
+const activeChatMessageAdaptor = createEntityAdapter({ selectId: (data) => data.id || data.guid || data_id })
 const chatGroupAdaptor = createEntityAdapter({ selectId: (data) => data._id })
 const fileuploadAdaptor = createEntityAdapter({ selectId: (data) => data._id || data.guid })
 const errorAdaptor = createEntityAdapter({ selectId: (data) => data.guid })

@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase';
 import { resolvePlace, ResolvedPlace } from '../lib/geo/geocoder';
 import {
   clusterVerifications,
@@ -9,6 +8,7 @@ import {
 } from '../lib/geo/clustering';
 import { haversineKm } from '../lib/geo/haversine';
 
+/*
 export interface AgentReport {
   agent: {
     id: string;
@@ -63,8 +63,9 @@ export interface PortfolioReport {
   agents: AgentReport[];
   generatedAt: string;
 }
+*/
 
-function generateNarrative(report: AgentReport): string {
+const generateNarrative = (report) => {
   const { agent, primaryCluster, clusters, movements, outliers, placeSummary } = report;
 
   let narrative = `**${agent.name}** operates`;
@@ -110,50 +111,21 @@ function generateNarrative(report: AgentReport): string {
   return narrative;
 }
 
-export async function buildAgentReport(
-  agentId: string,
-  dateRange?: { start: string; end: string }
-): Promise<AgentReport | null> {
-  const { data: agent, error: agentError } = await supabase
-    .from('agents')
-    .select('id, first_name, last_name, merchant:merchants(name)')
-    .eq('id', agentId)
-    .maybeSingle();
-
-  if (agentError || !agent) {
-    console.error('Failed to fetch agent:', agentError);
-    return null;
-  }
-
-  let query = supabase
-    .from('agent_verifications')
-    .select('id, agent_id, gps_lat, gps_lng, verified_at, notes')
-    .eq('agent_id', agentId)
-    .not('gps_lat', 'is', null)
-    .not('gps_lng', 'is', null)
-    .order('verified_at', { ascending: false });
-
-  if (dateRange) {
-    query = query.gte('verified_at', dateRange.start).lte('verified_at', dateRange.end);
-  }
-
-  const { data: verifications, error: verError } = await query;
-
-  if (verError) {
-    console.error('Failed to fetch verifications:', verError);
-    return null;
-  }
-
-  if (!verifications || verifications.length === 0) {
-    console.warn('No verifications found for agent:', agentId);
-    return null;
-  }
-
-  const points: VerificationPoint[] = verifications.map(v => ({
-    id: v.id,
-    lat: typeof v.gps_lat === 'string' ? parseFloat(v.gps_lat) : v.gps_lat!,
-    lng: typeof v.gps_lng === 'string' ? parseFloat(v.gps_lng) : v.gps_lng!,
-    verifiedAt: v.verified_at,
+export const buildAgentReport = async (dateRange, agent) => {
+  const points = ((agent || {}).verifications || []).filter(ve => {
+    if (dateRange) {
+      const rangeStartDate = new Date(dateRange.start);
+      const rangeEndDate = new Date(dateRange.end);
+      const verificationDate = new Date(ve.verifiedAt);
+      return (verificationDate >= rangeStartDate) && (verificationDate <= rangeEndDate)
+    } else {
+      return true
+    }
+  }).map(v => ({
+    id: v.guid,
+    lat: typeof v.latitude === 'string' ? parseFloat(v.latitude) : v.latitude,
+    lng: typeof v.longitude === 'string' ? parseFloat(v.longitude) : v.longitude,
+    verifiedAt: v.verifiedAt,
   }));
 
   const clusters = clusterVerifications(points);
@@ -161,10 +133,10 @@ export async function buildAgentReport(
 
   const outliers = primaryCluster
     ? findOutliers(points, primaryCluster.centroid).map(p => ({
-        lat: p.lat,
-        lng: p.lng,
-        distanceFromPrimaryKm: haversineKm([p.lat, p.lng], primaryCluster.centroid),
-      }))
+      lat: p.lat,
+      lng: p.lng,
+      distanceFromPrimaryKm: haversineKm([p.lat, p.lng], primaryCluster.centroid),
+    }))
     : [];
 
   const lastMoveKm = computeLastMoveDistance(points);
@@ -190,19 +162,19 @@ export async function buildAgentReport(
     })
   );
 
-  const report: AgentReport = {
+  const report = {
     agent: {
-      id: agent.id,
-      name: `${agent.first_name} ${agent.last_name}`,
-      merchant: (agent.merchant as any)?.name || null,
+      id: agent.guid,
+      name: `${agent.firstName} ${agent.lastName}`,
+      merchant: agent.merchantGuid?.name || null,
     },
     primaryCluster: primaryCluster
       ? {
-          label: primaryCluster.level.replace('_', ' '),
-          level: primaryCluster.level,
-          centroid: primaryCluster.centroid,
-          share: primaryCluster.consistency,
-        }
+        label: primaryCluster.level.replace('_', ' '),
+        level: primaryCluster.level,
+        centroid: primaryCluster.centroid,
+        share: primaryCluster.consistency,
+      }
       : null,
     clusters: clusters.map(c => ({
       id: c.id,
@@ -231,20 +203,8 @@ export async function buildAgentReport(
   return report;
 }
 
-export async function buildPortfolioReport(filters?: {
-  merchantId?: string;
-  startDate?: string;
-  endDate?: string;
-}): Promise<PortfolioReport> {
-  let agentQuery = supabase
-    .from('agents')
-    .select('id, first_name, last_name, merchant_id');
-
-  if (filters?.merchantId) {
-    agentQuery = agentQuery.eq('merchant_id', filters.merchantId);
-  }
-
-  const { data: agents } = await agentQuery;
+export const buildPortfolioReport = async (filters, agentsList = []) => {
+  const agents = agentsList.filter(agt => agt.merchantGuid === (filters?.merchantId || filters?.merchantGuid))
 
   if (!agents || agents.length === 0) {
     return {
@@ -262,18 +222,18 @@ export async function buildPortfolioReport(filters?: {
   const agentReports = await Promise.all(
     agents.map(agent =>
       buildAgentReport(
-        agent.id,
         filters?.startDate && filters?.endDate
           ? { start: filters.startDate, end: filters.endDate }
-          : undefined
+          : undefined,
+        agent
       )
     )
   );
 
-  const validReports = agentReports.filter((r): r is AgentReport => r !== null);
+  const validReports = agentReports.filter((r) => r !== null);
 
-  const regionDistribution: Record<string, number> = {};
-  const merchantDistribution: Record<string, number> = {};
+  const regionDistribution = {};
+  const merchantDistribution = {};
   let totalVerifications = 0;
 
   validReports.forEach(report => {

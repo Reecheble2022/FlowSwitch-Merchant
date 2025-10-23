@@ -28,8 +28,8 @@ export const agentUpdateSchema = z.object({
 
 export const verificationSchema = z.object({
   agent_id: z.string().uuid(),
-  gps_lat: z.number().min(-90).max(90),
-  gps_lng: z.number().min(-180).max(180),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
   notes: z.string().optional().nullable(),
 });
 

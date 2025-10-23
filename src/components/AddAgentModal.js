@@ -516,22 +516,22 @@ export default function AddAgentModal() {
                     </button>
                     {filteredMerchants.map(merchant => (
                       <button
-                        key={merchant.id}
+                        key={merchant.guid}
                         type="button"
                         onClick={() => {
                           setFormData(prev => ({
                             ...prev,
-                            merchantIds: prev.merchantIds.includes(merchant.id)
-                              ? prev.merchantIds.filter(id => id !== merchant.id)
-                              : [...prev.merchantIds, merchant.id]
+                            merchantIds: prev.merchantIds.includes(merchant.guid)
+                              ? prev.merchantIds.filter(id => id !== merchant.guid)
+                              : [...prev.merchantIds, merchant.guid]
                           }));
                         }}
-                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${formData.merchantIds.includes(merchant.id) ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${formData.merchantIds.includes(merchant.guid) ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
                           }`}
                       >
                         <input
                           type="checkbox"
-                          checked={formData.merchantIds.includes(merchant.id)}
+                          checked={formData.merchantIds.includes(merchant.guid)}
                           readOnly
                           className="mr-2"
                         />

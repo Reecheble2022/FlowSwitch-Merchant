@@ -383,7 +383,7 @@ const agent = await supabase
 
 // Link to merchants
 const links = merchantIds.map(id => ({
-  agent_id: agent.id,
+  agent_id: agent.guid,
   merchant_id: id
 }));
 

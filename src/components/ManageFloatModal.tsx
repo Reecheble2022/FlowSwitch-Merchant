@@ -35,7 +35,7 @@ export default function ManageFloatModal({ isOpen, onClose, account, mode, onSuc
   const loadLedger = async () => {
     if (!account) return;
     try {
-      const data = await floatApi.getLedger(account.id, 50);
+      const data = await floatApi.getLedger(account.guid, 50);
       setLedger(data);
     } catch (err: any) {
       setError(err.message);
@@ -67,7 +67,7 @@ export default function ManageFloatModal({ isOpen, onClose, account, mode, onSuc
             throw new Error('Amount is required');
           }
           await floatApi.creditAccount({
-            accountId: account.id,
+            accountId: account.guid,
             amount: parseFloat(amount),
             reason: reason || undefined,
           });
@@ -79,7 +79,7 @@ export default function ManageFloatModal({ isOpen, onClose, account, mode, onSuc
             throw new Error('Amount is required');
           }
           await floatApi.debitAccount({
-            accountId: account.id,
+            accountId: account.guid,
             amount: parseFloat(amount),
             reason: reason || undefined,
           });
@@ -92,7 +92,7 @@ export default function ManageFloatModal({ isOpen, onClose, account, mode, onSuc
           }
           const parsedLimits = JSON.parse(limitsJson);
           await floatApi.updateLimits({
-            accountId: account.id,
+            accountId: account.guid,
             limitsJson: parsedLimits,
             status,
           });
@@ -138,7 +138,7 @@ export default function ManageFloatModal({ isOpen, onClose, account, mode, onSuc
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `float-ledger-${account?.id}-${Date.now()}.csv`;
+    a.download = `float-ledger-${account?.guid}-${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -217,7 +217,7 @@ export default function ManageFloatModal({ isOpen, onClose, account, mode, onSuc
             <div className="space-y-2 overflow-y-auto max-h-96">
               {ledger.map(tx => (
                 <div
-                  key={tx.id}
+                  key={tx.guid}
                   className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <div className="flex items-center justify-between">

@@ -20,16 +20,15 @@ import {
   getCategoryColor,
   getStatusColor,
 } from '../lib/utils';
-import type { AgentWithStats, AgentVerification, CashNote, PromptVerification, FloatLedger } from '../types';
 
 export function AgentDetail() {
-  const { id } = useParams<{ id: string }>();
-  const [agent, setAgent] = useState<AgentWithStats | null>(null);
-  const [verifications, setVerifications] = useState<AgentVerification[]>([]);
-  const [cashNotes, setCashNotes] = useState<CashNote[]>([]);
-  const [prompts, setPrompts] = useState<PromptVerification[]>([]);
-  const [floatLedger, setFloatLedger] = useState<FloatLedger[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'verifications' | 'cash' | 'float' | 'prompts'>('overview');
+  const { id } = useParams();
+  const [agent, setAgent] = useState(null);
+  const [verifications, setVerifications] = useState([]);
+  const [cashNotes, setCashNotes] = useState([]);
+  const [prompts, setPrompts] = useState([]);
+  const [floatLedger, setFloatLedger] = useState([]);
+  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export function AgentDetail() {
   }, [id]);
 
   async function loadAgentData() {
-    if (!id) return;
+    if (!id) { return; }
 
     setLoading(true);
     try {
@@ -50,7 +49,6 @@ export function AgentDetail() {
         agentsApi.getPrompts(id),
         agentsApi.getFloatLedger(id, 1, 20),
       ]);
-
       setAgent(agentData);
       setVerifications(verificationsData);
       setCashNotes(cashNotesData);
@@ -63,7 +61,7 @@ export function AgentDetail() {
     }
   }
 
-  async function handleVerifyCashNote(noteId: string, verified: boolean) {
+  async function handleVerifyCashNote(noteId, verified) {
     try {
       await agentsApi.verifyCashNote(noteId, verified);
       await loadAgentData();
@@ -72,7 +70,7 @@ export function AgentDetail() {
     }
   }
 
-  async function handleUpdatePromptStatus(promptId: string, status: 'verified' | 'pending' | 'rejected') {
+  async function handleUpdatePromptStatus(promptId, status) {
     try {
       await agentsApi.updatePromptStatus(promptId, status);
       await loadAgentData();
@@ -90,11 +88,11 @@ export function AgentDetail() {
   }
 
   const tabs = [
-    { id: 'overview' as const, label: 'Overview', icon: User },
-    { id: 'verifications' as const, label: 'Verifications', icon: MapPin },
-    { id: 'cash' as const, label: 'Cash Notes', icon: Wallet },
-    { id: 'float' as const, label: 'Float Ledger', icon: TrendingUp },
-    { id: 'prompts' as const, label: 'Prompts', icon: FileText },
+    { id: 'overview', label: 'Overview', icon: User },
+    { id: 'verifications', label: 'Verifications', icon: MapPin },
+    { id: 'cash', label: 'Cash Notes', icon: Wallet },
+    { id: 'float', label: 'Float Ledger', icon: TrendingUp },
+    { id: 'prompts', label: 'Prompts', icon: FileText },
   ];
 
   const floatBalance = floatLedger.reduce((sum, entry) => {
@@ -184,11 +182,10 @@ export function AgentDetail() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${
-                  activeTab === tab.id
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors ${activeTab === tab.id
                     ? 'border-brand-green text-brand-green dark:border-brand-cyan dark:text-brand-cyan'
                     : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 <span className="font-medium text-sm whitespace-nowrap">{tab.label}</span>
@@ -248,13 +245,13 @@ export function AgentDetail() {
                 <div className="space-y-4">
                   {verifications.map((verification) => (
                     <div
-                      key={verification.id}
+                      key={verification.guid}
                       className="flex items-start gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
                     >
                       <MapPin className="w-5 h-5 text-brand-accent mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                          GPS: {verification.gps_lat.toFixed(6)}, {verification.gps_lng.toFixed(6)}
+                          GPS: {verification.latitude.toFixed(6)}, {verification.longitude.toFixed(6)}
                         </p>
                         {verification.notes && (
                           <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">

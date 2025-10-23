@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge';
 import { Building2, Mail, Phone } from 'lucide-react';
 import { formatDate } from '../lib/utils';
-import type { Merchant } from '../types';
 
 export function Merchants() {
-  const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [merchants, setMerchants] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,7 +45,7 @@ export function Merchants() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {merchants.map((merchant) => (
-          <Card key={merchant.id} className="hover:shadow-md transition-shadow">
+          <Card key={merchant.guid} className="hover:shadow-md transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1F6FEB] to-[#0EA5E9] flex items-center justify-center">

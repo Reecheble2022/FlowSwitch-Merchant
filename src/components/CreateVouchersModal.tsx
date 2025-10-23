@@ -388,7 +388,7 @@ export default function CreateVouchersModal({ isOpen, onClose, issuerAccountId, 
 
               <div className="max-h-96 overflow-y-auto space-y-2">
                 {createdVouchers.slice(0, 20).map(v => (
-                  <div key={v.id} className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800">
+                  <div key={v.guid} className="p-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800">
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-mono font-bold text-emerald-600">{v.code}</p>

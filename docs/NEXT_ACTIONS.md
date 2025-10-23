@@ -387,7 +387,6 @@ Use Supabase real-time subscriptions to auto-refresh data without polling.
 **Files to Touch:**
 - `src/providers/RealtimeContext.tsx` (new)
 - `src/pages/Dashboard.tsx` (subscribe)
-- `src/lib/supabase.ts` (subscription helpers)
 
 **Example:**
 ```typescript

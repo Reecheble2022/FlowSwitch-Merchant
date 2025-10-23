@@ -5,30 +5,44 @@ import { ChatPane } from '../components/chat/ChatPane';
 import { ContextPanel } from '../components/chat/ContextPanel';
 import { GradientButton } from '../components/ui/GradientButton';
 import { generateAgentReport } from '../services/aiReportService';
-import type { ChatMessage, ChatSession, AgentAIReport } from '../types';
+import { useItemDetailsViewrMutation, useItemsListReadrMutation } from "../backend/api/sharedCrud"
+import { selectOneItemByGuid } from "../backend/features/sharedMainState"
 
 export function AIReportBuilder() {
   const [searchParams] = useSearchParams();
   const agentId = searchParams.get('agentId');
 
-  const [session, setSession] = useState<ChatSession | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [session, setSession] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [report, setReport] = useState<AgentAIReport | null>(null);
+  const [report, setReport] = useState(null);
+
+  const [fetchAgentDetailsFn, {
+    isLoading: agentDetailsLoading,
+    isSuccess: agentDetailsFetchSucceeded,
+    isError: agentDetailsFetchFailed
+  }] = useItemDetailsViewrMutation()
+  const agent = useSelector(st => selectOneItemByGuid(st, "agent", agentId))
 
   useEffect(() => {
     if (agentId) {
-      initializeSession(agentId);
+      fetchAgentDetailsFn({ entity: "agent", guid: agentId })
     }
   }, [agentId]);
 
-  const initializeSession = async (agentId: string) => {
+  useEffect(() => {
+    if (agent) {
+      initializeSession(agentId, agent);
+    }
+  }, [agentDetailsFetchSucceeded, agent]);
+
+  const initializeSession = async (agentId, agent) => {
     setIsProcessing(true);
     try {
-      const generatedReport = await generateAgentReport({ agentId, lookbackDays: 30 });
+      const generatedReport = await generateAgentReport({ agentId, lookbackDays: 30 }, agent);
       setReport(generatedReport);
 
-      const initialMessage: ChatMessage = {
+      const initialMessage = {
         id: crypto.randomUUID(),
         role: 'analyst',
         content: generatedReport.narrative,
@@ -56,7 +70,7 @@ export function AIReportBuilder() {
       });
     } catch (error) {
       console.error('Failed to generate report:', error);
-      const errorMessage: ChatMessage = {
+      const errorMessage = {
         id: crypto.randomUUID(),
         role: 'analyst',
         content: 'Sorry, I encountered an error while analyzing the agent data. Please try again.',
@@ -68,10 +82,10 @@ export function AIReportBuilder() {
     }
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content) => {
     if (!report || !session) return;
 
-    const userMessage: ChatMessage = {
+    const userMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content,
@@ -83,7 +97,7 @@ export function AIReportBuilder() {
 
     setTimeout(() => {
       const response = generateResponse(content.toLowerCase(), report);
-      const analystMessage: ChatMessage = {
+      const analystMessage = {
         id: crypto.randomUUID(),
         role: 'analyst',
         content: response.content,
@@ -106,7 +120,7 @@ export function AIReportBuilder() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `flowswitch-report-${report.agent.id}-${Date.now()}.json`;
+    a.download = `flowswitch-report-${report.agent.guid}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -190,18 +204,16 @@ export function AIReportBuilder() {
 }
 
 function generateResponse(
-  query: string,
-  report: AgentAIReport
-): { content: string; chips?: Array<{ label: string; action: string; icon?: string }> } {
+  query,
+  report
+) {
   if (query.includes('map') || query.includes('show')) {
     return {
-      content: `🗺️ **Verification Map**\n\nI've updated the map on the right panel. ${
-        report.primaryCluster
-          ? `The map shows ${report.summary.totalVerifications} verification points. The primary cluster (shown with a green polygon) contains ${report.primaryCluster.pointCount} verifications within a ${report.primaryCluster.radius.toFixed(0)}m radius.`
-          : 'All verification points are displayed on the map.'
-      }\n\nThe agent primarily operates in **${report.summary.primaryLocation?.city}, ${
-        report.summary.primaryLocation?.countryName
-      }**.`,
+      content: `🗺️ **Verification Map**\n\nI've updated the map on the right panel. ${report.primaryCluster
+        ? `The map shows ${report.summary.totalVerifications} verification points. The primary cluster (shown with a green polygon) contains ${report.primaryCluster.pointCount} verifications within a ${report.primaryCluster.radius.toFixed(0)}m radius.`
+        : 'All verification points are displayed on the map.'
+        }\n\nThe agent primarily operates in **${report.summary.primaryLocation?.city}, ${report.summary.primaryLocation?.countryName
+        }**.`,
       chips: [
         { label: 'Cluster details', action: 'Tell me more about the clusters' },
         { label: 'Outliers', action: 'Show outliers', icon: 'map' },
@@ -218,21 +230,17 @@ function generateResponse(
     }
 
     return {
-      content: `📍 **Cluster Analysis**\n\n**Primary Cluster**:\n• Contains ${
-        primary.pointCount
-      } verifications (${Math.round(primary.shareOfTotal * 100)}% of total)\n• Radius: ${primary.radius.toFixed(
-        0
-      )} meters\n• Center: ${primary.centroid.lat.toFixed(6)}, ${primary.centroid.lng.toFixed(
-        6
-      )}\n\n${
-        report.clusters.length > 1
-          ? `**Secondary Clusters**: ${report.clusters.length - 1} additional cluster${
-              report.clusters.length > 2 ? 's' : ''
-            } detected`
+      content: `📍 **Cluster Analysis**\n\n**Primary Cluster**:\n• Contains ${primary.pointCount
+        } verifications (${Math.round(primary.shareOfTotal * 100)}% of total)\n• Radius: ${primary.radius.toFixed(
+          0
+        )} meters\n• Center: ${primary.centroid.lat.toFixed(6)}, ${primary.centroid.lng.toFixed(
+          6
+        )}\n\n${report.clusters.length > 1
+          ? `**Secondary Clusters**: ${report.clusters.length - 1} additional cluster${report.clusters.length > 2 ? 's' : ''
+          } detected`
           : '**No secondary clusters detected**'
-      }\n\nThis indicates the agent has a **consistent primary location** with ${
-        primary.shareOfTotal > 0.8 ? 'very high' : primary.shareOfTotal > 0.6 ? 'good' : 'moderate'
-      } location consistency.`,
+        }\n\nThis indicates the agent has a **consistent primary location** with ${primary.shareOfTotal > 0.8 ? 'very high' : primary.shareOfTotal > 0.6 ? 'good' : 'moderate'
+        } location consistency.`,
       chips: [
         { label: 'Show outliers', action: 'Show me the outliers' },
         { label: 'Movement', action: 'Tell me about movement patterns' },
@@ -250,19 +258,16 @@ function generateResponse(
 
     const farthest = report.outliers[0];
     return {
-      content: `🚩 **Outlier Analysis**\n\n**${
-        report.outliers.length
-      }** verification${
-        report.outliers.length !== 1 ? 's' : ''
-      } detected more than 10km from the primary location.\n\n**Farthest outlier**:\n• Distance: ${farthest.distanceFromPrimary.toFixed(
-        1
-      )} km from primary cluster\n• Coordinates: ${farthest.lat.toFixed(6)}, ${farthest.lng.toFixed(
-        6
-      )}\n\nOutliers may indicate:\n• Legitimate travel for work purposes\n• Unusual activity requiring investigation\n• GPS errors or anomalies\n\n${
-        report.outliers.length > 3
+      content: `🚩 **Outlier Analysis**\n\n**${report.outliers.length
+        }** verification${report.outliers.length !== 1 ? 's' : ''
+        } detected more than 10km from the primary location.\n\n**Farthest outlier**:\n• Distance: ${farthest.distanceFromPrimary.toFixed(
+          1
+        )} km from primary cluster\n• Coordinates: ${farthest.lat.toFixed(6)}, ${farthest.lng.toFixed(
+          6
+        )}\n\nOutliers may indicate:\n• Legitimate travel for work purposes\n• Unusual activity requiring investigation\n• GPS errors or anomalies\n\n${report.outliers.length > 3
           ? '⚠️ Multiple outliers detected - recommend manual review'
           : 'Outlier count is within normal range'
-      }`,
+        }`,
       chips: [{ label: 'Export report', action: 'Export this report as PDF', icon: 'download' }],
     };
   }
@@ -271,37 +276,33 @@ function generateResponse(
     return {
       content: `🧭 **Movement Analysis**\n\n**Total Distance**: ${report.movement.totalDistanceKm.toFixed(
         1
-      )} km across ${
-        report.summary.totalVerifications
-      } verifications\n**Last Movement**: ${report.movement.lastMovementKm.toFixed(
-        1
-      )} km\n\n**Average per verification**: ${(
-        report.movement.totalDistanceKm / Math.max(report.summary.totalVerifications - 1, 1)
-      ).toFixed(
-        1
-      )} km\n\n${
-        report.movement.totalDistanceKm < 5
+      )} km across ${report.summary.totalVerifications
+        } verifications\n**Last Movement**: ${report.movement.lastMovementKm.toFixed(
+          1
+        )} km\n\n**Average per verification**: ${(
+          report.movement.totalDistanceKm / Math.max(report.summary.totalVerifications - 1, 1)
+        ).toFixed(
+          1
+        )} km\n\n${report.movement.totalDistanceKm < 5
           ? '📍 Agent shows **very low mobility** - highly consistent location'
           : report.movement.totalDistanceKm < 50
-          ? '🚶 Agent shows **moderate mobility** - normal for field operations'
-          : '🚗 Agent shows **high mobility** - covers significant territory'
-      }`,
+            ? '🚶 Agent shows **moderate mobility** - normal for field operations'
+            : '🚗 Agent shows **high mobility** - covers significant territory'
+        }`,
     };
   }
 
   if (query.includes('same location') || query.includes('eli5') || query.includes('explain like')) {
     return {
-      content: `🎯 **Are these the same location? (Simple Explanation)**\n\n${
-        report.primaryCluster && report.primaryCluster.shareOfTotal > 0.8
-          ? '✅ **Yes, basically the same spot!**\n\nImagine if you drew a small circle on a map. Over 80% of this agent\'s verifications happen inside that circle. They\'re working from the same place most of the time.'
-          : report.primaryCluster && report.primaryCluster.shareOfTotal > 0.5
+      content: `🎯 **Are these the same location? (Simple Explanation)**\n\n${report.primaryCluster && report.primaryCluster.shareOfTotal > 0.8
+        ? '✅ **Yes, basically the same spot!**\n\nImagine if you drew a small circle on a map. Over 80% of this agent\'s verifications happen inside that circle. They\'re working from the same place most of the time.'
+        : report.primaryCluster && report.primaryCluster.shareOfTotal > 0.5
           ? '🟡 **Mostly the same, with some variation**\n\nThink of it like a neighborhood. Most verifications happen in one area (like staying in your neighborhood), but sometimes the agent goes to different parts of town.'
           : '🟠 **Different locations**\n\nThe agent moves around quite a bit - like having several favorite spots across the city rather than one main place.'
-      }\n\n**Why it matters**: ${
-        report.primaryCluster && report.primaryCluster.shareOfTotal > 0.8
+        }\n\n**Why it matters**: ${report.primaryCluster && report.primaryCluster.shareOfTotal > 0.8
           ? 'High consistency means the agent is reliable and stays put at their assigned location.'
           : 'More movement might be normal for their role, or could need a closer look.'
-      }`,
+        }`,
     };
   }
 
@@ -312,13 +313,10 @@ function generateResponse(
     }
 
     return {
-      content: `📍 **Location Details**\n\n${report.locationBlurb?.text || ''}\n\n**Administrative Breakdown**:\n${
-        loc.townOrSuburb ? `• **Area**: ${loc.townOrSuburb}\n` : ''
-      }• **City**: ${loc.city}\n• **Province/State**: ${loc.provinceOrState}\n• **Country**: ${
-        loc.countryName
-      }\n\n**Distance to nearest major place**: ${loc.distanceKmToNearest.toFixed(1)} km from ${
-        loc.nearestPlace
-      }\n\nSee the location card on the right for a photo and more details.`,
+      content: `📍 **Location Details**\n\n${report.locationBlurb?.text || ''}\n\n**Administrative Breakdown**:\n${loc.townOrSuburb ? `• **Area**: ${loc.townOrSuburb}\n` : ''
+        }• **City**: ${loc.city}\n• **Province/State**: ${loc.provinceOrState}\n• **Country**: ${loc.countryName
+        }\n\n**Distance to nearest major place**: ${loc.distanceKmToNearest.toFixed(1)} km from ${loc.nearestPlace
+        }\n\nSee the location card on the right for a photo and more details.`,
     };
   }
 

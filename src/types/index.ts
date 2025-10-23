@@ -51,8 +51,8 @@ export interface AgentVerification {
   id: string;
   agent_id: string;
   verifier_user_id: string;
-  gps_lat: number;
-  gps_lng: number;
+  latitude: number;
+  longitude: number;
   notes: string | null;
   verified_at: string;
   created_at: string;
