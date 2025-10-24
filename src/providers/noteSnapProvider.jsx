@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useFileUploaderMutation, useItemRegistrerMutation, useItemsListReadrMutation } from './backend/api/sharedCrud';
-import CompanyLogo from './images/flowswitch-icon.png';
+import { useFileUploaderMutation, useItemRegistrerMutation, useItemsListReadrMutation } from '../backend/api/sharedCrud';
+import CompanyLogo from '../images/flowswitch-icon.png';
 import Webcam from 'react-webcam';
 
 const NoteSnapContext = createContext();

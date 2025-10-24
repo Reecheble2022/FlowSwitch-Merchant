@@ -1,9 +1,9 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useItemFieldsUpdaterMutation, useFileUploaderMutation, useItemRegistrerMutation } from './backend/api/sharedCrud';
-import CompanyLogo from './images/flowswitch-icon.png';
-import locationPin from './images/flowswitch-homebase-prompt-icon-light.png';
-import ProfileImageInput from './components/profilePhotoInput';
-import SelfieCapture from './components/selfieCapture';
+import { useItemFieldsUpdaterMutation, useFileUploaderMutation, useItemRegistrerMutation } from '../backend/api/sharedCrud';
+import CompanyLogo from '../images/flowswitch-icon.png';
+import locationPin from '../images/flowswitch-homebase-prompt-icon-light.png';
+import ProfileImageInput from '../components/profilePhotoInput';
+import SelfieCapture from '../components/selfieCapture';
 
 const UserLocationContext = createContext();
 

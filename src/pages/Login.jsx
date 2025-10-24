@@ -1,31 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../providers/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { MerchantRegistrationTriggerButton } from "../components/merchantRegistrationTriggerButton";
+import { MerchantRegistrationTriggerButton } from '../components/merchantRegistrationTriggerButton';
 
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { user, loading: loginProcessing, login: submitLoginForm, logout, loginFailed, loginErrorMessage } = useAuth();
+  const { user, loading: loginProcessing, login: submitLoginForm, loginFailed, loginSucceeded, loginErrorMessage } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await submitLoginForm(email, password);
-      navigate('/');
-    } catch (err) {
-      setError(err.message || 'Failed to login');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    console.log('ooo-->[loginSucceeded, loginFailed, loginErrorMessage] changed =>', loginFailed, loginSucceeded, loginErrorMessage);
+    console.log('ooo-->[user] changed =>', user);
+    if (loginSucceeded && user) {
+      navigate('/dashboard');
     }
-  }
+  }, [loginSucceeded, loginFailed, loginErrorMessage, user, navigate]);
+
+  console.log('ooo-->loginProcessing =', loginProcessing);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await submitLoginForm(email, password);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background-light to-slate-100 dark:from-background-dark dark:to-slate-900 px-4">
@@ -46,9 +45,12 @@ export function Login() {
             Sign in to your account
           </p>
 
-          {error && (
-            <div className="mb-6 p-3 rounded-xl bg-error/10 dark:bg-error/20 border border-error/30 dark:border-error/30">
-              <p className="text-sm text-error dark:text-error">{error}</p>
+          {loginFailed && (
+            <div className="mb-6 p-3 rounded-lg bg-error/10 dark:bg-error/20 border border-error/30 dark:border-error/30 flex items-center">
+              <svg className="w-5 h-5 text-error mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p className="text-sm text-error dark:text-error">{loginErrorMessage || "Login failed. Check your credentials and try again"}</p>
             </div>
           )}
 
@@ -73,7 +75,7 @@ export function Login() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-6"
               size="lg"
               disabled={loginProcessing}
             >

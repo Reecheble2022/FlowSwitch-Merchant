@@ -2,9 +2,11 @@ import { useState, useEffect, FormEvent } from 'react';
 import { X, Upload, User, Mail, Phone, MapPin, CreditCard, Calendar, Users } from 'lucide-react';
 import { useModal } from '../providers/ModalContext';
 import { z } from 'zod';
+import { useSelector } from 'react-redux';
 import { isValidPhoneNumber, format } from 'libphonenumber-js';
 import { calculateAge } from '../lib/ageUtils';
-import { useItemRegistrerMutation, useItemsListReadrMutation } from "../backend/api/sharedCrud"
+import { useItemRegistrerMutation, useItemsListReadrMutation, useFileUploaderMutation } from "../backend/api/sharedCrud"
+import { selectList } from '../backend/features/sharedMainState';
 
 const agentSchema = z.object({
   firstName: z.string().min(1, 'First name is required').regex(/^[a-zA-Z\s-]+$/, 'Only letters and hyphens allowed'),

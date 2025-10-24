@@ -353,65 +353,6 @@ const mainSlice = createSlice({
                     }
                 })
             .addMatcher(
-                sharedCrudApi.endpoints.streamDataReader.matchFulfilled,
-                (state, { payload: { Data, entity } }) => {
-                    try {
-                        if (Array.isArray(Data)) {
-                            if (entity && state[entity]) {
-                                const data = Data.map(da => ({ ...da, guid: da._id }))
-                                mainAdaptors[entity].upsertMany(state[entity], data)
-                                if (entity === "message") {
-                                    const activeChatPivot = useSelector(st => selectOneItemByGuid(st, "active_collection", "activechatpivot"))
-                                    const { activeProfileId, merchantId, channelId } = activeChatPivot || {}
-                                    const activeChatMessages = (Data || []).filter(msg => (
-                                        ((msg.senderProfileId?._id === activeProfileId) || (msg.senderProfileId?._id === channelId)) &&
-                                        (((msg.channelTypeId?._id || msg.channel) === activeProfileId) || ((msg.channelTypeId?._id || msg.channel) === channelId)) &&
-                                        (msg.merchantId === merchantId)
-                                    )).map(msg => {
-                                        const {
-                                            guid,
-                                            senderProfileId,
-                                            channel, content,
-                                            contentType,
-                                            channelTypeId,
-                                            fileCaption,
-                                            file: fileUri,
-                                            read,
-                                            merchantId,
-                                            applicationId,
-                                            createdAt
-                                        } = msg || {}
-
-                                        const receiverId = channel || channelTypeId?._id
-                                        let lightMsg = {
-                                            id: guid || msg._id,
-                                            senderId: senderProfileId?._id,
-                                            receiverId,
-                                            text: fileCaption || content,
-                                            contentType,
-                                            fileUri,
-                                            read,
-                                            merchantId,
-                                            applicationId,
-                                            date: createdAt?.split('T')[0],
-                                            time: createdAt?.split('T')[1],
-                                            reactions: {},
-                                        };
-
-                                        return lightMsg
-                                    })
-                                    //
-                                    mainAdaptors["activechatmessage"].setAll(state["activechatmessage"], activeChatMessages)
-                                }
-                            } else {
-                                console.warn(`undefined state[${entity}] in sharedMainState->sharedCrudApi.endpoints.streamDataReader.matchFulfilled`)
-                            }
-                        }
-                    } catch (err) {
-                        state.error = err || { message: "Unexpected error", code: "REDUX-addMatcher-streamDataReader" };
-                    }
-                })
-            .addMatcher(
                 sharedCrudApi.endpoints.httpMessageSender.matchFulfilled,
                 (state, { payload }) => {
                     const { topic: entity, Data } = payload;
@@ -434,142 +375,62 @@ export const {
 
 //======================= state selectors (helper functions) =============================
 
-const selectListx = (state, entity) => {
-    // const entityData = state.sharedstateslice[entity];
-    // if (!entityData) {
-    //     console.warn(`Entity "${entity}" not found in state.`);
-    //     return [];
-    // }
-    // const selector = mainAdaptors[entity]?.getSelectors(stt => stt.sharedstateslice[entity]);
-    // if (!selector) {
-    //     console.warn(`Selector for entity "${entity}" is not available.`);
-    //     return [];
-    // }
-    // try {
-    //     return createSelector(
-    //         () => entityData, // Input selector: Get the entity data from state
-    //         (entityData) => selector.selectAll(entityData) || [] // Output selector: Use the adapter's selectAll method
-    //     )(state);
-    // } catch (error) {
-    //     console.error(`Error in selectList for entity "${entity}":`, error);
-    //     return [];
-    // }
-}
+// Input selectors
+const getSharedState = (state) => state.sharedstateslice;
+const getEntity = (_, entity) => entity;
+const getGuid = (_, __, guid) => guid;
+const getField = (_, __, field) => field;
+const getValue = (_, __, ___, value) => value;
 
-const selectList = (state, entity) => {
-    return createSelector(
-        [(state) => state, (x) => entity],
-        (state, entity) => {
-            try {
-                if (!entity) {
-                    return [];
-                }
-                const entities = state?.sharedstateslice[entity]?.entities;
-                return state?.sharedstateslice[entity]?.ids.map(id => entities[id]);
-            } catch (err) {
+// Memoized selectors
+const selectList = createSelector(
+    [getSharedState, getEntity],
+    (sharedState, entity) => {
+        try {
+            if (!entity || !sharedState?.[entity]) {
                 return [];
             }
+            const entities = sharedState[entity].entities;
+            return sharedState[entity].ids.map((id) => entities[id]) || [];
+        } catch (err) {
+            console.warn(`Error in selectList for entity "${entity}":`, err);
+            return [];
         }
-    )(state);
-};
+    }
+);
 
-const selectOneItemByGuidx = (state, entity, guid) => {
-    // const selector = mainAdaptors[entity]?.getSelectors(stt => stt.sharedstateslice[entity]);
-    // if (!selector) {
-    //     console.warn(`Selector for entity "${entity}" is not available.`);
-    //     return {};
-    // }
-    // try {
-    //     //const item = selector?.selectById(state, guid);
-    //     //return item || {};
-    //     return createSelector(
-    //         (state) => state.sharedstateslice[entity],
-    //         (entityData) => selector?.selectById(entityData, guid) || {}
-    //     )(state);
-    // } catch (error) {
-    //     console.error(`Error in selectOneItemByGuid for entity "${entity}" and guid "${guid}":`, error);
-    //     return {};
-    // }
-}
-
-const selectOneItemByGuid = (state, entity, guid) => {
-    return createSelector(
-        [(state) => state, (x) => entity, (x) => guid],
-        (state, entity, guid) => {
-            try {
-                if (!entity) {
-                    return {};
-                }
-                if (!guid) {
-                    return {};
-                }
-                return state?.sharedstateslice[entity]?.entities[guid] || {};
-            } catch (err) {
-                return {};
+const selectOneItemByGuid = createSelector(
+    [getSharedState, getEntity, getGuid],
+    (sharedState, entity, guid) => {
+        try {
+            if (!entity || !guid || !sharedState?.[entity]) {
+                return { va: null };
             }
+            return { va: sharedState[entity].entities[guid] || null };
+        } catch (err) {
+            console.warn(`Error in selectOneItemByGuid for entity "${entity}" and guid "${guid}":`, err);
+            return { va: null };
         }
-    )(state);
-};
+    }
+);
 
-const selectManyItemsByFieldx = (state, entity, field, value) => {
-    // if (!entity) {
-    //     console.warn("Entity name is required.");
-    //     return [];
-    // }
-
-    // const entityData = state?.sharedstateslice[entity];
-    // if (!entityData) {
-    //     console.warn(`Entity "${entity}" not found in state.`);
-    //     return [];
-    // }
-
-    // const selector = mainAdaptors[entity]?.getSelectors(stt => stt.sharedstateslice[entity]);
-    // if (!selector) {
-    //     console.warn(`Selector for entity "${entity}" is not available.`);
-    //     return [];
-    // }
-
-    // try {
-    //     //const result = selector?.selectAll(state).filter(item => item[field] === value) || [];
-    //     //return result;
-    //     return createSelector(
-    //         (state) => state.sharedstateslice[entity],
-    //         (entityData) => {
-    //             const allItems = selector?.selectAll(entityData) || [];
-    //             return allItems.filter(item => item[field] === value);
-    //         }
-    //     )(state);
-    // } catch (error) {
-    //     console.error(`Error in selectManyItemsByField for entity "${entity}" and field "${field}":`, error);
-    //     return [];
-    // }
-};
-
-const selectManyItemsByField = (state, entity, field, value) => {
-    return createSelector(
-        [(state) => state, (x) => entity, (x) => field, (x) => value],
-        (state, entity, field, value) => {
-            try {
-                if (!state) {
-                    return [];
-                }
-                if (!entity) {
-                    return [];
-                }
-                if (!field) {
-                    return [];
-                }
-                if (!value) {
-                    return [];
-                }
-                const entities = state?.sharedstateslice[entity]?.entities;
-                return state?.sharedstateslice[entity]?.ids.filter(id => entities[id][field] === value).map(id => entities[id]);
-            } catch (err) {
+const selectManyItemsByField = createSelector(
+    [getSharedState, getEntity, getField, getValue],
+    (sharedState, entity, field, value) => {
+        try {
+            if (!entity || !field || !value || !sharedState?.[entity]) {
                 return [];
             }
+            const entities = sharedState[entity].entities;
+            return sharedState[entity].ids
+                .filter((id) => entities[id]?.[field] === value)
+                .map((id) => entities[id]) || [];
+        } catch (err) {
+            console.warn(`Error in selectManyItemsByField for entity "${entity}" and field "${field}":`, err);
+            return [];
         }
-    )(state);
-};
+    }
+);
 
 export {
     selectList,
