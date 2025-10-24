@@ -1,15 +1,5 @@
 import { appiiSlice } from "./apiSlice";
 import { sub } from 'date-fns';
-import { getWebSocketInstance } from './websocketConnection';
-
-const isValidJsonString = (jsonString) => {
-  try {
-    JSON.parse(jsonString);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
 
 export const sharedCrudApi = appiiSlice.injectEndpoints({
   endpoints: builder => ({
@@ -347,68 +337,6 @@ export const sharedCrudApi = appiiSlice.injectEndpoints({
           opportunityId,
           applicationId,
         }
-      },
-    }),
-
-    //______________________________________________
-    // websocketMessageSender: builder.mutation({
-    //   query: ({ type = "subscribe", topic = "message", channel }) => ({
-    //     url: `${WEBSOCKET_BASE_URL}:${WEBSOCKET_PORT}/api/reech-websocket-api/`,
-    //     method: 'POST',
-    //     body: { type, topic, channel },
-    //   }),
-    // }),
-
-    //______________________________________________
-    streamDataReader: builder.mutation({
-      query: ({ entity = "message", filters }) => {
-        let targetURL = `/${entity}`;
-        if (filters && Object.keys(filters).length > 0) {
-          const searchParams = new URLSearchParams(filters);
-          const params = searchParams.toString();
-          targetURL = `/${entity}?${params}`
-        }
-        return ({
-          url: targetURL,
-          method: "GET",
-        })
-      },
-      transformResponse({ data }, _, { entity }) {
-        return {
-          entity,
-          Data: data,
-        }
-      },
-      async onCacheEntryAdded({ streamDataReceivedCallback }, { dispach, cacheDataLoaded, cacheEntryRemoved }) {
-        let ws;
-        ws = getWebSocketInstance(`wss://reech-node-api-7o3szyfdpq-uc.a.run.app/`)
-        try {
-          // wait for the initial query to resolve before proceeding
-          await cacheDataLoaded;
-          ws.addEventListener("message", (event) => {
-            let decodedData = {}
-            if (isValidJsonString(event)) {
-              decodedData = JSON.parse(event.data)
-            } else {
-              console.warn("Failed to decode data received from the backend because it is not a valid json string")
-            }
-            const { topic } = decodedData;
-            const processedListData = {
-              ...decodedData,
-              createdAt: decodedData.createdAt || sub(new Date(), { minutes: 1 }).toISOString(),
-              created_at: decodedData.created_at || sub(new Date(), { minutes: 1 }).toISOString(),
-              reactions: decodedData.reactions || { views: 0, likes: 0 }
-            };
-            return dispach(streamDataReceivedCallback({ topic, Data: processedListData }));
-          })
-        } catch (e) {
-          // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
-          // in which case `cacheDataLoaded` will throw
-        }
-        // cacheEntryRemoved will resolve when the cache subscription is no longer active
-        await cacheEntryRemoved
-        // perform cleanup steps once the `cacheEntryRemoved` promise resolves
-        ws.close()
       },
     }),
 

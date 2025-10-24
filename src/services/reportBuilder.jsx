@@ -1,10 +1,8 @@
-import { resolvePlace, ResolvedPlace } from '../lib/geo/geocoder';
+import { resolvePlace } from '../lib/geo/geocoder';
 import {
   clusterVerifications,
   findOutliers,
   computeLastMoveDistance,
-  Cluster,
-  VerificationPoint,
 } from '../lib/geo/clustering';
 import { haversineKm } from '../lib/geo/haversine';
 

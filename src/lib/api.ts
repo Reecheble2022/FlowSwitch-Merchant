@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import type {
-  User,
   Agent,
   Merchant,
   AgentVerification,
@@ -16,7 +15,6 @@ import type {
   PromptChannel,
 } from '../types';
 import type {
-  LoginInput,
   AgentInput,
   AgentUpdateInput,
   VerificationInput,
@@ -27,34 +25,6 @@ import type {
 import { generateScheduleDates } from './scheduling';
 
 export const auth = {
-  async login(credentials: LoginInput): Promise<User> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', credentials.email)
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
-    if (!data) throw new Error('Invalid credentials');
-
-    return data as User;
-  },
-
-  async getCurrentUser(): Promise<User | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
-    return data as User | null;
-  },
-
   async logout() {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
@@ -415,7 +385,7 @@ export const dashboard = {
 };
 
 export const prompts = {
-  async sendNow(agentIds: string[], channel: PromptChannel = 'sms'): Promise<void> {
+  async sendNow(agentIds: string[]): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 

@@ -1,7 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { createEntityAdapter } from "@reduxjs/toolkit";
-// import { getWebSocketInstance } from './websocketConnection';
 import { setUsrCredentials } from "../features/sharedMainState2"
 const API_BASE_URL = "https://flowswitch-backend-566729010148.africa-south1.run.app";
 // const API_BASE_URL = "http://localhost:8080";
@@ -11,7 +10,7 @@ const activeCollectionAdapter = createEntityAdapter({ selectId: (data) => data.k
 const baseQuery = fetchBaseQuery({
     baseUrl: API_BASE_URL,
     credentials: "include",
-    //credentials: "omit",
+    // credentials: "omit",
     prepareHeaders: (headers, { getState, endpoint }) => {
         // if user is authenticated, add auth token to request header
         const { va: accessToken } = getState().sharedstateslice?.active_collection?.entities?.access_token || {};
@@ -29,7 +28,7 @@ const baseQuery = fetchBaseQuery({
 const refreshQuery = fetchBaseQuery({
     baseUrl: API_BASE_URL,
     credentials: "include", // For web
-    //credentials: "omit", // For mobile
+    // credentials: "omit", // For mobile
     prepareHeaders: (headers, { getState, endpoint }) => {
         // if user is authenticated, add auth token to request header
         const { va: refreshToken } = getState().sharedstateslice?.active_collection?.entities?.refresh_token || {};

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Sparkles, Download, FileJson, FileText } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { ChatPane } from '../components/chat/ChatPane';
 import { ContextPanel } from '../components/chat/ContextPanel';
 import { GradientButton } from '../components/ui/GradientButton';

@@ -5,7 +5,7 @@ const AuthContext = createContext(undefined);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const [submitLoginForm, {
     data: loginSuccessResponse,
@@ -17,12 +17,18 @@ export function AuthProvider({ children }) {
 
   const { data: loginErrorMessage } = loginError || {}
 
+  console.log("<<+++>>-loginSuccessResponse.user =", loginSuccessResponse?.user)
+
   useEffect(() => {
-    const { Data: LoggedInUserData } = loginSuccessResponse || {}
+    const { user: LoggedInUserData } = loginSuccessResponse || {}
     if (LoggedInUserData) {
       setUser(LoggedInUserData)
+      setLoading(false)
     }
-  }, [loginSucceeded])
+    if (loginFailed) {
+      setLoading(false)
+    }
+  }, [loginSucceeded, loginFailed])
 
   const login = async (email, password) => {
     setLoading(true)
@@ -37,8 +43,10 @@ export function AuthProvider({ children }) {
     }
   }
 
+  console.log("user=",user,", loginProcessing = ", loginProcessing,", loading =",loading,", loginFailed =",loginFailed,", loginSucceeded =",loginSucceeded,", loginErrorMessage =", loginErrorMessage)
+
   return (
-    <AuthContext.Provider value={{ user, loading: loginProcessing || loading, login, logout, loginFailed, loginErrorMessage }}>
+    <AuthContext.Provider value={{ user, loading: loginProcessing || loading, login, logout, loginFailed, loginSucceeded, loginErrorMessage }}>
       {children}
     </AuthContext.Provider>
   );
