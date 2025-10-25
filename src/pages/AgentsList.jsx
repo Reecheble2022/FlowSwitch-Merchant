@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { agents as agentsApi, merchants as merchantsApi } from '../lib/api';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
@@ -9,75 +8,52 @@ import { Users, Search, Download, FileSpreadsheet, Printer, Eye, Plus } from 'lu
 import { formatRelativeTime, getCategoryColor, getStatusColor } from '../lib/utils';
 import { exportToCSV, exportToXLSX, printTable } from '../lib/export';
 import { useModal } from '../providers/ModalContext';
+import { useItemsListReadrMutation } from "../backend/api/sharedCrud"
+import { selectList } from "../backend/features/sharedMainState"
 
 export function AgentsList() {
   const { openModal } = useModal();
-  const [agents, setAgents] = useState([]);
-  const [merchants, setMerchants] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterMerchant, setFilterMerchant] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [agentsPage, setAgentsPage] = useState(1);
+  const [merchantsPage, setMerchantsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50)
 
-  const pageSize = 20;
+  const [fetchMerchantsFn, {
+    isLoading: merchantsLoading,
+    isSuccess: merchantsFetchSucceeded,
+    isError: merchantsFetchFailed
+  }] = useItemsListReadrMutation()
+
+  const [fetchAgentsFn, {
+    isLoading: agentsLoading,
+    isSuccess: agentsFetchSucceeded,
+    isError: agentsFetchFailed
+  }] = useItemsListReadrMutation()
+
+  const merchants = useSelector(st => selectList(st, "merchant"))
+  const agents = useSelector(st => selectList(st, "agent"))
 
   useEffect(() => {
-    loadMerchants();
-
-    const handleAgentCreated = () => {
-      loadAgents();
-    };
-
-    window.addEventListener('agentCreated', handleAgentCreated);
-    return () => window.removeEventListener('agentCreated', handleAgentCreated);
-  }, []);
+    fetchAgentsFn({ entity: "agent", page: agentsPage, max: pageSize, limit: pageSize });
+  }, [agentsPage]);
 
   useEffect(() => {
-    loadAgents();
-  }, [searchQuery, filterStatus, filterMerchant, page]);
-
-  async function loadMerchants() {
-    try {
-      const data = await merchantsApi.list();
-      setMerchants(data);
-    } catch (error) {
-      console.error('Failed to load merchants:', error);
-    }
-  }
-
-  async function loadAgents() {
-    setLoading(true);
-    try {
-      const { data, count } = await agentsApi.list({
-        query: searchQuery || undefined,
-        status: filterStatus || undefined,
-        merchantId: filterMerchant || undefined,
-        page,
-        pageSize,
-      });
-
-      setAgents(data);
-      setTotalCount(count);
-    } catch (error) {
-      console.error('Failed to load agents:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+    fetchMerchantsFn({ entity: "merchant", page: merchantsPage, max: pageSize, limit: pageSize });
+  }, [merchantsPage]);
 
   function prepareExportData() {
-    return agents.map(agent => ({
-      first_name: agent.first_name,
-      last_name: agent.last_name,
+    return (agents || []).map(agent => ({
+      first_name: agent.firstName,
+      last_name: agent.lastName,
       phone: agent.phone,
       email: agent.email || '',
-      national_id: agent.national_id || '',
+      national_id: agent.nationalId || '',
       nationality: agent.nationality || '',
       gender: agent.gender || '',
       status: agent.status,
-      created_at: new Date(agent.created_at).toLocaleDateString(),
+      created_at: new Date(agent.createdAt).toLocaleDateString(),
     }));
   }
 
@@ -111,7 +87,7 @@ export function AgentsList() {
     printTable(exportData, 'FlowSwitch Agents', filters);
   }
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const totalPages = Math.ceil((agents || []).length / pageSize);
 
   return (
     <div className="space-y-6">
@@ -122,7 +98,7 @@ export function AgentsList() {
             Agents
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            {totalCount} total agents
+            {(agents || []).length} total agents
           </p>
         </div>
         <Button
@@ -173,7 +149,7 @@ export function AgentsList() {
             className="h-10 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#1F6FEB]"
           >
             <option value="">All Merchants</option>
-            {merchants.map((merchant) => (
+            {(merchants || []).map((merchant) => (
               <option key={merchant.guid} value={merchant.guid}>
                 {merchant.name}
               </option>
@@ -236,7 +212,7 @@ export function AgentsList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-              {loading ? (
+              {agentsLoading ? (
                 <tr>
                   <td colSpan={10} className="px-6 py-12 text-center">
                     <div className="inline-block w-6 h-6 border-2 border-[#1F6FEB] border-t-transparent rounded-full animate-spin" />
@@ -254,21 +230,21 @@ export function AgentsList() {
               ) : (
                 agents.map((agent) => (
                   <tr
-                    key={agent.id}
+                    key={agent.guid}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <td className="px-6 py-4">
                       <div className="w-10 h-10 rounded-full bg-gradient-brand flex items-center justify-center">
                         <span className="text-sm font-medium text-white">
-                          {agent.first_name[0]}{agent.last_name[0]}
+                          {agent.firstName[0]}{agent.lastName[0]}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
-                      {agent.first_name}
+                      {agent.firstName}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
-                      {agent.last_name}
+                      {agent.lastName}
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={getCategoryColor(agent.category)}>
@@ -276,13 +252,13 @@ export function AgentsList() {
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-slate-600 dark:text-slate-400">
-                      {agent.national_id}
+                      {agent.nationalId || agent.national_id}
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-slate-600 dark:text-slate-400">
                       {agent.phone}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
-                      {agent.merchant?.name || 'N/A'}
+                      {agent.merchantGuid?.name || 'N/A'}
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={getStatusColor(agent.status)}>
@@ -310,7 +286,7 @@ export function AgentsList() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, totalCount)} of {totalCount} agents
+              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, (agents || []).length)} of {(agents || []).length} agents
             </p>
             <div className="flex gap-2">
               <Button

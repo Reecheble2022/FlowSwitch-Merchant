@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { agents as agentsApi } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -20,23 +19,32 @@ import {
   getCategoryColor,
   getStatusColor,
 } from '../lib/utils';
+import { useItemDetailsViewrMutation } from "../backend/api/sharedCrud"
+import { selectOneItemByGuid } from "../backend/features/sharedMainState"
 
 export function AgentDetail() {
-  const { id } = useParams();
-  const [agent, setAgent] = useState(null);
+  const { id, guid } = useParams();
   const [verifications, setVerifications] = useState([]);
   const [cashNotes, setCashNotes] = useState([]);
   const [prompts, setPrompts] = useState([]);
   const [floatLedger, setFloatLedger] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
+
+  const [fetchAgentDetailsFn, {
+    isLoading: agentDetailsLoading,
+    isSuccess: agentDetailsFetchSucceeded,
+    isError: agentDetailsFetchFailed
+  }] = useItemDetailsViewrMutation()
+
+  const agent = useSelector(st => selectOneItemByGuid(st, "agent", id || guid)) || {}
 
   useEffect(() => {
-    if (id) {
-      loadAgentData();
+    if (id || guid) {
+      fetchAgentDetailsFn({ entity: "agent", guid: guid || id });
     }
-  }, [id]);
+  }, [id, guid]);
 
+  /*
   async function loadAgentData() {
     if (!id) { return; }
 
@@ -60,11 +68,12 @@ export function AgentDetail() {
       setLoading(false);
     }
   }
+    */
 
   async function handleVerifyCashNote(noteId, verified) {
     try {
-      await agentsApi.verifyCashNote(noteId, verified);
-      await loadAgentData();
+      // await agentsApi.verifyCashNote(noteId, verified);
+      //TODO: Opene cash note verifcation prompt
     } catch (error) {
       console.error('Failed to verify cash note:', error);
     }
@@ -72,14 +81,14 @@ export function AgentDetail() {
 
   async function handleUpdatePromptStatus(promptId, status) {
     try {
-      await agentsApi.updatePromptStatus(promptId, status);
-      await loadAgentData();
+      // await agentsApi.updatePromptStatus(promptId, status);
+      //TODO: implement
     } catch (error) {
       console.error('Failed to update prompt status:', error);
     }
   }
 
-  if (loading || !agent) {
+  if (agentDetailsLoading || !agent) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="w-8 h-8 border-2 border-[#1F6FEB] border-t-transparent rounded-full animate-spin" />
@@ -110,7 +119,7 @@ export function AgentDetail() {
         </Link>
         <div className="flex-1">
           <h1 className="text-3xl font-bold gradient-text">
-            {agent.first_name} {agent.last_name}
+            {agent.firstName} {agent.lastName}
           </h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
             Agent Details
@@ -124,7 +133,7 @@ export function AgentDetail() {
           <div className="flex flex-col md:flex-row gap-6">
             <div className="w-20 h-20 rounded-full bg-gradient-brand flex items-center justify-center flex-shrink-0">
               <span className="text-2xl font-bold text-white">
-                {agent.first_name[0]}{agent.last_name[0]}
+                {agent.firstName[0]}{agent.lastName[0]}
               </span>
             </div>
 
@@ -141,7 +150,7 @@ export function AgentDetail() {
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Agent ID</p>
-                <p className="text-sm font-mono text-slate-900 dark:text-slate-100">{agent.national_id}</p>
+                <p className="text-sm font-mono text-slate-900 dark:text-slate-100">{agent.nationalId}</p>
               </div>
 
               <div>
@@ -151,7 +160,7 @@ export function AgentDetail() {
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Merchant</p>
-                <p className="text-sm text-slate-900 dark:text-slate-100">{agent.merchant?.name || 'N/A'}</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{agent.merchantGuid?.name || 'N/A'}</p>
               </div>
 
               <div>
@@ -161,12 +170,12 @@ export function AgentDetail() {
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Joined</p>
-                <p className="text-sm text-slate-900 dark:text-slate-100">{formatDate(agent.created_at)}</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{formatDate(agent.createdAt)}</p>
               </div>
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Verifications</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{agent.verification_count}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{agent.verification_count || 0}</p>
               </div>
             </div>
           </div>
@@ -204,7 +213,7 @@ export function AgentDetail() {
                 <CardTitle>Verified Prompts</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-green-600 tabular-nums">{agent.verified_prompts_count}</p>
+                <p className="text-3xl font-bold text-green-600 tabular-nums">{(agent?.verificationSchedules || []).length}</p>
               </CardContent>
             </Card>
 

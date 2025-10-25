@@ -135,7 +135,7 @@ function App() {
                       <MerchantSignupModal />
                     <Toast />
                   </BrowserRouter>
-              </AgentVerificationSchedulingProvider>
+                </AgentVerificationSchedulingProvider>
               </AgentRegistrationProvider>
             </MerchantRegistrationProvider>
           </NoteSnapProvider>
