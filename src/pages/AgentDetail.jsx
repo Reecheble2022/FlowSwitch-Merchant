@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -36,7 +37,7 @@ export function AgentDetail() {
     isError: agentDetailsFetchFailed
   }] = useItemDetailsViewrMutation()
 
-  const agent = useSelector(st => selectOneItemByGuid(st, "agent", id || guid)) || {}
+  const {va: agent} = useSelector(st => selectOneItemByGuid(st, "agent", (id || guid))) || {}
 
   useEffect(() => {
     if (id || guid) {
@@ -133,7 +134,7 @@ export function AgentDetail() {
           <div className="flex flex-col md:flex-row gap-6">
             <div className="w-20 h-20 rounded-full bg-gradient-brand flex items-center justify-center flex-shrink-0">
               <span className="text-2xl font-bold text-white">
-                {agent.firstName[0]}{agent.lastName[0]}
+                {(agent.firstName || "x")[0]}{(agent.lastName || "x")[0]}
               </span>
             </div>
 

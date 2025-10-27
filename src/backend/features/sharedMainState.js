@@ -326,7 +326,11 @@ const mainSlice = createSlice({
                 sharedCrudApi.endpoints.itemDetailsViewer.matchFulfilled,
                 (state, { payload: { entity, Data } }) => {
                     try {
-                        mainAdaptors[entity].upsertOne(state[entity], Data);
+                        console.log("o-sharedCrudApi.endpoints.itemDetailsViewer->entity =", entity)
+                        console.log("o-sharedCrudApi.endpoints.itemDetailsViewer->Data =", Data)
+                        if (entity && Data) {
+                            mainAdaptors[entity].upsertOne(state[entity], Data);
+                        }
                     } catch (err) {
                         state.error = err || { message: "Unexpected error", code: "REDUX-addMatcher-itemDetailsViewer" };
                     }

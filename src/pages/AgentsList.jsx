@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
@@ -230,7 +231,7 @@ export function AgentsList() {
               ) : (
                 agents.map((agent) => (
                   <tr
-                    key={agent.guid}
+                    key={agent.guid || agent.id || agent._id}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     <td className="px-6 py-4">

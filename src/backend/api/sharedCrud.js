@@ -217,7 +217,6 @@ export const sharedCrudApi = appiiSlice.injectEndpoints({
     itemDetailsViewer: builder.query({
       query: ({ entity, guid }) => `/${entity}/${guid}`,
       transformResponse: ({ msg, data }, _, { entity }) => {
-        const { applications, profiles, opportunities, messages } = data || {}
         return {
           entity,
           Data: data
