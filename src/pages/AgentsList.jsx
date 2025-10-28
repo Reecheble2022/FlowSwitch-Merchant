@@ -121,7 +121,6 @@ export function AgentsList() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setPage(1);
               }}
               className="pl-10"
             />
@@ -131,7 +130,6 @@ export function AgentsList() {
             value={filterStatus}
             onChange={(e) => {
               setFilterStatus(e.target.value);
-              setPage(1);
             }}
             className="h-10 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#1F6FEB]"
           >
@@ -145,7 +143,6 @@ export function AgentsList() {
             value={filterMerchant}
             onChange={(e) => {
               setFilterMerchant(e.target.value);
-              setPage(1);
             }}
             className="h-10 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#1F6FEB]"
           >
@@ -229,55 +226,83 @@ export function AgentsList() {
                   </td>
                 </tr>
               ) : (
-                agents.map((agent) => (
-                  <tr
-                    key={agent.guid || agent.id || agent._id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-brand flex items-center justify-center">
-                        <span className="text-sm font-medium text-white">
-                          {agent.firstName[0]}{agent.lastName[0]}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
-                      {agent.firstName}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
-                      {agent.lastName}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge className={getCategoryColor(agent.category)}>
-                        {agent.category}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-mono text-slate-600 dark:text-slate-400">
-                      {agent.nationalId || agent.national_id}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-mono text-slate-600 dark:text-slate-400">
-                      {agent.phone}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
-                      {agent.merchantGuid?.name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge className={getStatusColor(agent.status)}>
-                        {agent.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                      {formatRelativeTime(agent.last_seen_at)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link to={`/agents/${agent.guid}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                (agents || [])
+                  .filter(agnt => {
+                    // Merchant filter
+                    if (filterMerchant && filterMerchant !== "") {
+                      return agnt.merchantGuid?.guid === filterMerchant;
+                    }
+                    return true;
+                  })
+                  .filter(agnt => {
+                    // Status filter
+                    if (filterStatus && filterStatus !== "") {
+                      return agnt.status?.toLowerCase() === filterStatus.toLowerCase();
+                    }
+                    return true;
+                  })
+                  .filter(agnt => {
+                    // Search by name, ID (ussdCode), or phone
+                    if (!searchQuery || searchQuery.trim() === "") return true;
+                    const query = searchQuery.toLowerCase().trim();
+                    const fullName = `${agnt.firstName} ${agnt.lastName}`.toLowerCase();
+                    const agentId = (agnt.ussdCode || "").toLowerCase();
+                    const phone = (agnt.phone || "").toLowerCase();
+                    return (
+                      fullName.includes(query) ||
+                      agentId.includes(query) ||
+                      phone.includes(query)
+                    );
+                  })
+                  .map((agent) => (
+                    <tr
+                      key={agent.guid || agent.id || agent._id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="w-10 h-10 rounded-full bg-gradient-brand flex items-center justify-center">
+                          <span className="text-sm font-medium text-white">
+                            {agent.firstName[0]}{agent.lastName[0]}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
+                        {agent.firstName}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
+                        {agent.lastName}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge className={getCategoryColor(agent.category)}>
+                          {agent.category}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-mono text-slate-600 dark:text-slate-400">
+                        {agent.ussdCode}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-mono text-slate-600 dark:text-slate-400">
+                        {agent.phone}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-900 dark:text-slate-100">
+                        {agent.merchantGuid?.name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge className={getStatusColor(agent.status)}>
+                          {agent.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                        {formatRelativeTime(agent.last_seen_at)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Link to={`/agents/${agent.guid}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
               )}
             </tbody>
           </table>
@@ -287,22 +312,22 @@ export function AgentsList() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, (agents || []).length)} of {(agents || []).length} agents
+              Showing {(agentsPage - 1) * pageSize + 1} to {Math.min(agentsPage * pageSize, (agents || []).length)} of {(agents || []).length} agents
             </p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
+                onClick={() => setAgentsPage(p => Math.max(1, p - 1))}
+                disabled={agentsPage === 1}
               >
                 Previous
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                onClick={() => setAgentsPage(p => Math.min(totalPages, p + 1))}
+                disabled={agentsPage === totalPages}
               >
                 Next
               </Button>
