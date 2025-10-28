@@ -22,14 +22,13 @@ import {
 } from '../lib/utils';
 import { useItemDetailsViewrMutation } from "../backend/api/sharedCrud"
 import { selectOneItemByGuid } from "../backend/features/sharedMainState"
+import { useAgentVerificationScheduling } from "../providers/agentVerificationScheduleProvider";
 
 export function AgentDetail() {
   const { id, guid } = useParams();
-  const [verifications, setVerifications] = useState([]);
-  const [cashNotes, setCashNotes] = useState([]);
-  const [prompts, setPrompts] = useState([]);
   const [floatLedger, setFloatLedger] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const { scheduleAgentVerificationForOneAgent } = useAgentVerificationScheduling();
 
   const [fetchAgentDetailsFn, {
     isLoading: agentDetailsLoading,
@@ -39,37 +38,13 @@ export function AgentDetail() {
 
   const {va: agent} = useSelector(st => selectOneItemByGuid(st, "agent", (id || guid))) || {}
 
+  console.log("<>-agent =", agent)
+
   useEffect(() => {
     if (id || guid) {
       fetchAgentDetailsFn({ entity: "agent", guid: guid || id });
     }
   }, [id, guid]);
-
-  /*
-  async function loadAgentData() {
-    if (!id) { return; }
-
-    setLoading(true);
-    try {
-      const [agentData, verificationsData, cashNotesData, promptsData, floatData] = await Promise.all([
-        agentsApi.getById(id),
-        agentsApi.getVerifications(id),
-        agentsApi.getCashNotes(id),
-        agentsApi.getPrompts(id),
-        agentsApi.getFloatLedger(id, 1, 20),
-      ]);
-      setAgent(agentData);
-      setVerifications(verificationsData);
-      setCashNotes(cashNotesData);
-      setPrompts(promptsData);
-      setFloatLedger(floatData.data);
-    } catch (error) {
-      console.error('Failed to load agent data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-    */
 
   async function handleVerifyCashNote(noteId, verified) {
     try {
@@ -89,7 +64,7 @@ export function AgentDetail() {
     }
   }
 
-  if (agentDetailsLoading || !agent) {
+  if (agentDetailsLoading && !agent) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="w-8 h-8 border-2 border-[#1F6FEB] border-t-transparent rounded-full animate-spin" />
@@ -151,7 +126,7 @@ export function AgentDetail() {
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Agent ID</p>
-                <p className="text-sm font-mono text-slate-900 dark:text-slate-100">{agent.nationalId}</p>
+                <p className="text-sm font-mono text-slate-900 dark:text-slate-100">{agent.ussdCode}</p>
               </div>
 
               <div>
@@ -161,7 +136,7 @@ export function AgentDetail() {
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Merchant</p>
-                <p className="text-sm text-slate-900 dark:text-slate-100">{agent.merchantGuid?.name || 'N/A'}</p>
+                <p className="text-sm text-slate-900 dark:text-slate-100">{agent.merchantGuid?.name || 'FLSW'}</p>
               </div>
 
               <div>
@@ -176,7 +151,7 @@ export function AgentDetail() {
 
               <div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">Verifications</p>
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{agent.verification_count || 0}</p>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{(agent.verifications || []).length}</p>
               </div>
             </div>
           </div>
@@ -214,7 +189,7 @@ export function AgentDetail() {
                 <CardTitle>Verified Prompts</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-green-600 tabular-nums">{(agent?.verificationSchedules || []).length}</p>
+                <p className="text-3xl font-bold text-green-600 tabular-nums">{(agent?.verifications || []).length}</p>
               </CardContent>
             </Card>
 
@@ -246,14 +221,14 @@ export function AgentDetail() {
               <CardTitle>Verification History</CardTitle>
             </CardHeader>
             <CardContent>
-              {verifications.length === 0 ? (
+              {(agent?.verifications || []).length === 0 ? (
                 <div className="text-center py-12">
                   <MapPin className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
                   <p className="text-slate-600 dark:text-slate-400">No verifications yet</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {verifications.map((verification) => (
+                  {(agent?.verifications || []).map((verification) => (
                     <div
                       key={verification.guid}
                       className="flex items-start gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
@@ -269,7 +244,7 @@ export function AgentDetail() {
                           </p>
                         )}
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                          {formatDateTime(verification.verified_at)}
+                          {formatDateTime(verification.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -286,43 +261,37 @@ export function AgentDetail() {
               <CardTitle>Cash Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              {cashNotes.length === 0 ? (
+              {(agent?.cashNoteVerifications || []).length === 0 ? (
                 <div className="text-center py-12">
                   <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
                   <p className="text-slate-600 dark:text-slate-400">No cash notes yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {cashNotes.map((note) => (
+                  {(agent?.cashNoteVerifications || []).map((note) => (
                     <div
-                      key={note.id}
+                      key={note.guid}
                       className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-                            {formatCurrency(note.amount, note.currency)}
+                            {formatCurrency(note.amount || note.noteValue, note.currency || "ZAR")}
                           </p>
-                          <Badge className={note.verified ? getStatusColor('verified') : getStatusColor('pending')}>
-                            {note.verified ? 'Verified' : 'Pending'}
+                          <Badge className={getStatusColor('verified')}>
+                            Verified
                           </Badge>
                         </div>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                          Receipt: {note.receipt_id}
+                          Serial Number: {note.serialNumber}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          {formatDateTime(note.created_at)}
+                          {formatDateTime(note.createdAt)}
                         </p>
+                        <div className="w-full py-2">
+                          <img src={note.notePhoto} className="w-full h-auto"/>
+                        </div>
                       </div>
-
-                      {!note.verified && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleVerifyCashNote(note.id, true)}
-                        >
-                          Verify
-                        </Button>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -339,38 +308,38 @@ export function AgentDetail() {
                 <div className="text-right">
                   <p className="text-xs text-slate-600 dark:text-slate-400">Current Balance</p>
                   <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-                    {formatCurrency(floatBalance, 'UGX')}
+                    {formatCurrency(((agent?.wallets || []).length ? agent?.wallets[0].floatFiatBalance : 0), ((agent?.wallets || []).length ? agent?.wallets[0].fiatCurrency || "ZAR": "ZAR"))}
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {floatLedger.length === 0 ? (
+              {(agent?.wallets || []).length === 0 ? (
                 <div className="text-center py-12">
                   <TrendingUp className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
                   <p className="text-slate-600 dark:text-slate-400">No float entries yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {floatLedger.map((entry) => (
+                  {(agent?.wallets || []).map((entry) => (
                     <div
-                      key={entry.id}
+                      key={entry.guid}
                       className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           <Badge className={entry.type === 'credit' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}>
-                            {entry.type}
+                            {entry.type || "credit"}
                           </Badge>
                           <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-                            {entry.type === 'credit' ? '+' : '-'}{formatCurrency(entry.amount, entry.currency)}
+                            {entry.type === 'credit' ? '-' : '+'}{formatCurrency(entry.floatFiatBalance, entry.fiatCurrency)}
                           </p>
                         </div>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                           {entry.reference}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          {formatDateTime(entry.created_at)}
+                          {formatDateTime(entry.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -387,28 +356,28 @@ export function AgentDetail() {
               <CardTitle>Prompt Verifications</CardTitle>
             </CardHeader>
             <CardContent>
-              {prompts.length === 0 ? (
+              {(agent?.verificationSchedules || []).length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
                   <p className="text-slate-600 dark:text-slate-400">No prompts yet</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {prompts.map((prompt) => (
+                  {(agent?.verificationSchedules || []).map((prompt) => (
                     <div
-                      key={prompt.id}
+                      key={prompt.guid}
                       className="flex items-start justify-between gap-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50"
                     >
                       <div className="flex-1">
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                          {prompt.prompt_text}
+                          {prompt.prompt_text || `${prompt.verified? "Verified":"Scheduled"} prompt`}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge className={getStatusColor(prompt.status)}>
-                            {prompt.status}
+                          <Badge className={getStatusColor(prompt.verified? "verified" : "pending")}>
+                            {prompt.verified? "verified" : "pending"}
                           </Badge>
                           <span className="text-xs text-slate-500 dark:text-slate-400">
-                            {formatDateTime(prompt.created_at)}
+                            {formatDateTime(prompt.createdAt)}
                           </span>
                         </div>
                       </div>
@@ -418,14 +387,14 @@ export function AgentDetail() {
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => handleUpdatePromptStatus(prompt.id, 'verified')}
+                            onClick={() => handleUpdatePromptStatus(prompt.guid, 'verified')}
                           >
                             Approve
                           </Button>
                           <Button
                             size="sm"
                             variant="danger"
-                            onClick={() => handleUpdatePromptStatus(prompt.id, 'rejected')}
+                            onClick={() => handleUpdatePromptStatus(prompt.guid, 'rejected')}
                           >
                             Reject
                           </Button>
@@ -435,6 +404,11 @@ export function AgentDetail() {
                   ))}
                 </div>
               )}
+              <div className="w-full items-end">
+                <button onClick={() => scheduleAgentVerificationForOneAgent(agent)} className="bg-blue-100 rounded-lg px-4 py-2">
+                  Prompt {agent?.firstName} {agent?.lastName} 
+                </button>
+              </div>
             </CardContent>
           </Card>
         )}

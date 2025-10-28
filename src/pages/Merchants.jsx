@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Building2, Mail, Phone } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 import { useItemsListReadrMutation } from "../backend/api/sharedCrud"
 import { selectList } from "../backend/features/sharedMainState"
-const [merchantsPage, setMerchantsPage] = useState(1);
-const [pageSize, setPageSize] = useState(50)
+
 
 export function Merchants() {
+  const [merchantsPage, setMerchantsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50)
 
   const [fetchMerchantsFn, {
     isLoading: merchantsLoading,

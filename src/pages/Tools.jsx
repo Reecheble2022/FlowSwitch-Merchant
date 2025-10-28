@@ -98,7 +98,7 @@ const Tools = () => {
               <HomeIcon />
             </div>
             <h3 className="text-lg font-semibold leading-none tracking-tight">
-              Homebase Verification
+              Verification Scheduler
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Schedule homebase verification prompts
@@ -238,4 +238,4 @@ const Tools = () => {
   );
 };
 
-export default Tools;
+export { Tools };

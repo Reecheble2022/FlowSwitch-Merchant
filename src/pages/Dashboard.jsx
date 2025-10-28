@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { GradientButton } from '../components/ui/GradientButton';
 import { Users, CheckCircle, Clock, Building2, TrendingUp, ArrowRight, Zap, Plus } from 'lucide-react';
 import { formatRelativeTime } from '../lib/utils';
 import { useModal } from '../providers/ModalContext';
 import { useItemsListReadrMutation, useItemsListReaderQuery } from "../backend/api/sharedCrud";
-const [verificationsPage, setVerificationsPage] = useState(1);
-const [pageSize, setPageSize] = useState(50)
+import { selectList } from "../backend/features/sharedMainState"
 
 export function Dashboard() {
   const { openModal } = useModal();
+  const [verificationsPage, setVerificationsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50)
 
   const { data: merchantsResponse } = useItemsListReaderQuery({ entity: "merchant", page: 1 })
   const { Data: merchantsList } = merchantsResponse || {};
