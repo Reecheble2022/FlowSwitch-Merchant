@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './providers/ThemeContext';
 import { ModalProvider } from './providers/ModalContext';
@@ -24,8 +25,15 @@ import { AgentVerificationSchedulingProvider } from './providers/agentVerificati
 import { MerchantRegistrationProvider } from './providers/merchantRegistrationProvider';
 import { useAuth } from "./providers/AuthContext";
 
-function App() {
+const App = () => {
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.agentGuid) {
+      window.location.href = 'https://agents.flowswitchapi.com';
+    }
+  }, [user?.agentGuid]);
+
   return (
     <ThemeProvider>
         <ModalProvider>
