@@ -19,18 +19,14 @@ import {
   Wallet
 } from 'lucide-react';
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Float & Vouchers']);
+  const [expandedItems, setExpandedItems] = useState(['Float & Vouchers']);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -56,7 +52,7 @@ export function Layout({ children }: LayoutProps) {
     navigate('/login');
   }
 
-  const getInitials = (name?: string) => {
+  const getInitials = (name) => {
     if (!name) return 'U';
     return name
       .split(' ')
@@ -111,8 +107,8 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigation.map((item: any) => {
-            const isActive = location.pathname === item.href || item.subItems?.some((sub: any) => location.pathname === sub.href);
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href || item.subItems?.some((sub) => location.pathname === sub.href);
             const isExpanded = expandedItems.includes(item.name);
             const Icon = item.icon;
 
@@ -154,7 +150,7 @@ export function Layout({ children }: LayoutProps) {
                   </button>
                   {!sidebarCollapsed && isExpanded && (
                     <div className="mt-1 ml-6 space-y-1">
-                      {item.subItems.map((subItem: any) => {
+                      {item.subItems.map((subItem) => {
                         const subIsActive = location.pathname === subItem.href;
                         return (
                           <Link

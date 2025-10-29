@@ -19,6 +19,7 @@ const cashnoteverificationAdaptor = createEntityAdapter({ selectId: (data) => (d
 const agentverificationAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
 const agentverificationscheduleAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
 const voucherAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
+const voucherredemptionAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
 const floatwalletAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
 const agentmerchanttrustAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
 const roleAdaptor = createEntityAdapter({ selectId: (data) => (data.guid || data._id) })
@@ -38,6 +39,7 @@ export const mainAdaptors = {
     agentverification: agentverificationAdaptor,
     agentverificationschedule: agentverificationscheduleAdaptor,
     voucher: voucherAdaptor, 
+    voucherredemption: voucherredemptionAdaptor,
     floatwallet: floatwalletAdaptor,
     agentmerchanttrust: agentmerchanttrustAdaptor,
     role: roleAdaptor,
@@ -59,6 +61,7 @@ export const mainInixoStates = {
     agentverification: agentverificationAdaptor.getInitialState(),
     agentverificationschedule: agentverificationscheduleAdaptor.getInitialState(),
     voucher: voucherAdaptor.getInitialState(), 
+    voucherredemption: voucherredemptionAdaptor.getInitialState(),
     floatwallet: floatwalletAdaptor.getInitialState(),
     agentmerchanttrust: agentmerchanttrustAdaptor.getInitialState(),
     role: roleAdaptor.getInitialState(),
@@ -326,7 +329,11 @@ const mainSlice = createSlice({
                 sharedCrudApi.endpoints.itemDetailsViewer.matchFulfilled,
                 (state, { payload: { entity, Data } }) => {
                     try {
-                        mainAdaptors[entity].upsertOne(state[entity], Data);
+                        console.log("o-sharedCrudApi.endpoints.itemDetailsViewer->entity =", entity)
+                        console.log("o-sharedCrudApi.endpoints.itemDetailsViewer->Data =", Data)
+                        if (entity && Data) {
+                            mainAdaptors[entity].upsertOne(state[entity], Data);
+                        }
                     } catch (err) {
                         state.error = err || { message: "Unexpected error", code: "REDUX-addMatcher-itemDetailsViewer" };
                     }

@@ -77,7 +77,7 @@ export function Reports() {
           startDate: startDate || undefined,
           endDate: endDate || undefined,
         };
-        const portfolio = await buildPortfolioReport(filters);
+        const portfolio = await buildPortfolioReport(filters, agents);
         setPortfolioReport(portfolio);
       }
     } catch (err) {
@@ -456,7 +456,7 @@ export function Reports() {
                 <CardContent>
                   <div className="space-y-3">
                     {Object.entries(portfolioReport.summary.regionDistribution).map(([region, count]) => (
-                      <div key={region} className="flex items-center justify-between">
+                      <div key={count} className="flex items-center justify-between">
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                           {region}
                         </span>

@@ -101,14 +101,14 @@ export const AgentVerificationSchedulingProvider = ({ children, merchant }) => {
             {isOneOff ? (
               <p className="text-gray-600 mb-4"> Prompt {target.type === 'one' ? ` ${getAgentName(target.agent)}` : 'all agents'} immediately </p>
             ) : (
-              <div className="flex flex-col lg:flex-row gap-8 p-4 w-full border mx-auto">
+              <div className="flex flex-col md:flex-row justify-between gap-8 p-4 w-full border">
                 <div>
                   <label className="block text-gray-700 mb-1">Prompt start date</label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-50 p-2 border rounded"
+                    className="w-full p-2 border rounded"
                     required
                   />
                 </div>
@@ -119,7 +119,7 @@ export const AgentVerificationSchedulingProvider = ({ children, merchant }) => {
                     min="1"
                     value={intervalDays}
                     onChange={(e) => setIntervalDays(parseInt(e.target.value) || 1)}
-                    className="w-15 p-2 border rounded"
+                    className="w-full p-2 border rounded"
                     required
                   />
                 </div>
@@ -130,7 +130,7 @@ export const AgentVerificationSchedulingProvider = ({ children, merchant }) => {
                     min="1"
                     value={promptCount}
                     onChange={(e) => setPromptCount(parseInt(e.target.value) || 1)}
-                    className="w-15 p-2 border rounded"
+                    className="w-full p-2 border rounded"
                     required
                   />
                 </div>

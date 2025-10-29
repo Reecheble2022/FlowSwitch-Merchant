@@ -1,14 +1,27 @@
 import { useState } from 'react';
 import { Wallet, TrendingUp, Receipt, Clock } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { Card } from '../components/ui/Card';
+import { useItemsListReadrMutation, useItemsListReaderQuery } from "../backend/api/sharedCrud";
+import { selectList } from "../backend/features/sharedMainState"
 
 export function Float() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'accounts' | 'vouchers'>('overview');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [floatWalletsPage, setFloatWalletsPage] = useState(1);
+  const [vouchersPage, setVouchersPage] = useState(1);
+  const [voucherRedemptionsPage, setVoucherRedemptionsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(200)
+  const { isLoading: floatWalletsLoading } = useItemsListReaderQuery({ entity: "floatwallet", page: floatWalletsPage, limit: pageSize, max: pageSize });
+  const { isLoading: vouchersLoading } = useItemsListReaderQuery({ entity: "voucher", page: vouchersPage, limit: pageSize, max: pageSize });
+  const { isLoading: voucherRedemptionsLoading } = useItemsListReaderQuery({ entity: "voucherredemption", page: voucherRedemptionsPage, limit: pageSize, max: pageSize });
+  const floatWallets = useSelector(st => selectList(st, "floatwallet"))
+  const vouchers = useSelector(st => selectList(st, "voucher"))
+  const voucherRedemptions = useSelector(st => selectList(st, "voucherredemption"))
 
   const tabs = [
-    { id: 'overview' as const, name: 'Overview', icon: TrendingUp },
-    { id: 'accounts' as const, name: 'Float Accounts', icon: Wallet },
-    { id: 'vouchers' as const, name: 'Vouchers', icon: Receipt },
+    { id: 'overview', name: 'Overview', icon: TrendingUp },
+    { id: 'accounts', name: 'Float Accounts', icon: Wallet },
+    { id: 'vouchers', name: 'Vouchers', icon: Receipt },
   ];
 
   return (
@@ -52,23 +65,36 @@ export function Float() {
         </nav>
       </div>
 
-      {activeTab === 'overview' && <OverviewTab />}
+      {activeTab === 'overview' && <OverviewTab setActiveTab={setActiveTab}/>}
       {activeTab === 'accounts' && <AccountsTab />}
       {activeTab === 'vouchers' && <VouchersTab />}
     </div>
   );
 }
 
-function OverviewTab() {
+const OverviewTab = ({ setActiveTab }) => {
+  const [floatWalletsPage, setFloatWalletsPage] = useState(1);
+  const [vouchersPage, setVouchersPage] = useState(1);
+  const [voucherRedemptionsPage, setVoucherRedemptionsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(200)
+  const { isLoading: floatWalletsLoading } = useItemsListReaderQuery({ entity: "floatwallet", page: floatWalletsPage, limit: pageSize, max: pageSize });
+  const { isLoading: vouchersLoading } = useItemsListReaderQuery({ entity: "voucher", page: vouchersPage, limit: pageSize, max: pageSize });
+  const { isLoading: voucherRedemptionsLoading } = useItemsListReaderQuery({ entity: "voucherredemption", page: voucherRedemptionsPage, limit: pageSize, max: pageSize });
+  const floatWallets = useSelector(st => selectList(st, "floatwallet"))
+  const vouchers = useSelector(st => selectList(st, "voucher"))
+  const voucherRedemptions = useSelector(st => selectList(st, "voucherredemption"))
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Total Float in Play</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">R1,000,000</p>
-              <p className="mt-1 text-sm text-brand-green">+12.5% from last week</p>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400"> Total Float in Play </p>
+              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white"> 
+                R{(floatWallets || []).reduce((sum, item) => sum + item.floatFiatBalance, 0) + (vouchers || []).reduce((sum, item) => sum + item.voucherFiatValue, 0)}
+              </p>
+              <p className="mt-1 text-sm text-brand-green"> +12.5% from last week </p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-brand-green/10 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-brand-green" />
@@ -80,8 +106,8 @@ function OverviewTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Vouchers</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">0</p>
-              <p className="mt-1 text-sm text-slate-500">Worth R0</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white"> {(vouchers || []).length} </p>
+              <p className="mt-1 text-sm text-slate-500">Worth R{(vouchers || []).reduce((sum, item) => sum + item.voucherFiatValue, 0)}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-brand-cyan/10 flex items-center justify-center">
               <Receipt className="w-6 h-6 text-brand-cyan" />
@@ -93,8 +119,8 @@ function OverviewTab() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Redeemed Today</p>
-              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white">0</p>
-              <p className="mt-1 text-sm text-slate-500">Worth R0</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-white"> {(voucherRedemptions || []).length} </p>
+              <p className="mt-1 text-sm text-slate-500">Worth R{(voucherRedemptions || []).reduce((sum, item) => sum + item.fiatAmount, 0)}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
               <Receipt className="w-6 h-6 text-emerald-500" />
@@ -125,7 +151,9 @@ function OverviewTab() {
               <p className="text-sm text-slate-500">ID: system</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-brand-green">R1,000,000.00</p>
+              <p className="text-2xl font-bold text-brand-green">
+                R {(floatWallets || []).reduce((sum, item) => sum + item.floatFiatBalance, 0)}
+              </p>
               <p className="text-sm text-slate-500">Available balance</p>
             </div>
           </div>
@@ -161,24 +189,37 @@ function OverviewTab() {
   );
 }
 
-function AccountsTab() {
+const AccountsTab = () => {
+  const [floatWalletsPage, setFloatWalletsPage] = useState(1);
+  const [vouchersPage, setVouchersPage] = useState(1);
+  const [voucherRedemptionsPage, setVoucherRedemptionsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(200)
+  const { isLoading: floatWalletsLoading } = useItemsListReaderQuery({ entity: "floatwallet", page: floatWalletsPage, limit: pageSize, max: pageSize });
+  const { isLoading: vouchersLoading } = useItemsListReaderQuery({ entity: "voucher", page: vouchersPage, limit: pageSize, max: pageSize });
+  const { isLoading: voucherRedemptionsLoading } = useItemsListReaderQuery({ entity: "voucherredemption", page: voucherRedemptionsPage, limit: pageSize, max: pageSize });
+  const floatWallets = useSelector(st => selectList(st, "floatwallet"))
+  const vouchers = useSelector(st => selectList(st, "voucher"))
+  const voucherRedemptions = useSelector(st => selectList(st, "voucherredemption"))
   return (
     <Card className="p-6">
       <div className="text-center py-12">
         <Wallet className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-700 mb-4" />
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Float Accounts</h3>
         <p className="text-slate-600 dark:text-slate-400 mb-6">
-          Float account management interface will be displayed here.
-          <br />
-          System account with R1M is ready and operational.
+          Float accounts management interface.
         </p>
         <div className="max-w-2xl mx-auto text-left space-y-4">
-          <div className="p-4 rounded-xl bg-brand-green/5 border border-brand-green/20">
-            <h4 className="font-semibold text-brand-green mb-2">✓ Database Schema Created</h4>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              5 tables: float_accounts, float_transactions, float_holds, vouchers, voucher_redeems
-            </p>
-          </div>
+          {(floatWallets || []).map(walletAccount => (
+              <div key={walletAccount.guid} className="p-4 rounded-xl bg-brand-cyan/5 border border-brand-cyan/20">
+                <h4 className={`font-semibold mb-2 ${walletAccount.floatFiatBalance ? "text-brand-cyan" : "text-amber-600"}`}>
+                  ✓ {walletAccount.agentGuid.firstName} {walletAccount.agentGuid.lastName} ({walletAccount.floatFiatBalance})
+                </h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Agent ID: {walletAccount.agentGuid?.ussdCode} , Phone: {walletAccount.agentGuid?.phone}, Address: {walletAccount.agentGuid?.address}, Merchant: {walletAccount.merchantGuid?.name || "__"}
+                </p>
+              </div>
+          ))}
+          {/*
           <div className="p-4 rounded-xl bg-brand-cyan/5 border border-brand-cyan/20">
             <h4 className="font-semibold text-brand-cyan mb-2">✓ API Functions Ready</h4>
             <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -191,13 +232,24 @@ function AccountsTab() {
               Full UI components for account management, voucher creation, and redemption
             </p>
           </div>
+          */}
         </div>
       </div>
     </Card>
   );
 }
 
-function VouchersTab() {
+const VouchersTab = () => {
+  const [floatWalletsPage, setFloatWalletsPage] = useState(1);
+  const [vouchersPage, setVouchersPage] = useState(1);
+  const [voucherRedemptionsPage, setVoucherRedemptionsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(200)
+  const { isLoading: floatWalletsLoading } = useItemsListReaderQuery({ entity: "floatwallet", page: floatWalletsPage, limit: pageSize, max: pageSize });
+  const { isLoading: vouchersLoading } = useItemsListReaderQuery({ entity: "voucher", page: vouchersPage, limit: pageSize, max: pageSize });
+  const { isLoading: voucherRedemptionsLoading } = useItemsListReaderQuery({ entity: "voucherredemption", page: voucherRedemptionsPage, limit: pageSize, max: pageSize });
+  const floatWallets = useSelector(st => selectList(st, "floatwallet"))
+  const vouchers = useSelector(st => selectList(st, "voucher"))
+  const voucherRedemptions = useSelector(st => selectList(st, "voucherredemption"))
   return (
     <Card className="p-6">
       <div className="text-center py-12">
@@ -209,30 +261,22 @@ function VouchersTab() {
           All backend logic is complete and ready to use.
         </p>
         <div className="max-w-2xl mx-auto text-left space-y-4">
-          <div className="p-4 rounded-xl bg-brand-green/5 border border-brand-green/20">
-            <h4 className="font-semibold text-brand-green mb-2">✓ Code Generation Ready</h4>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Human-friendly codes (FS-XXXX-YYYY) with HMAC-SHA256 checksums
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-brand-cyan/5 border border-brand-cyan/20">
-            <h4 className="font-semibold text-brand-cyan mb-2">✓ QR Code Support</h4>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Base64 JSON payloads for scanning and verification
-            </p>
-          </div>
-          <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
-            <h4 className="font-semibold text-purple-600 mb-2">✓ Business Rules Enforced</h4>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Single-use, purpose-bound, with expiry dates and redeemer restrictions
-            </p>
-          </div>
+          {(vouchers || []).map(voucher => (
+              <div key={voucher.guid} className="p-4 rounded-xl bg-brand-cyan/5 border border-brand-cyan/20">
+                <h4 className={`font-semibold mb-2 ${voucher.voucherFiatValue ? "text-brand-cyan" : "text-amber-600"}`}>
+                  ✓ {voucher.agentGuid.firstName} {voucher.agentGuid.lastName} ({voucher.voucherFiatValue})
+                </h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Merchant: {voucher.merchantGuid?.name || "__"}, Agent ID: {voucher.agentGuid?.ussdCode} , Phone: {voucher.agentGuid?.phone}, Address: {voucher.agentGuid?.address}
+                </p>
+              </div>
+          ))}
         </div>
       </div>
     </Card>
   );
 }
 
-function setActiveTab(tab: 'overview' | 'accounts' | 'vouchers') {
+function setActiveTab(tab) {
   return tab;
 }

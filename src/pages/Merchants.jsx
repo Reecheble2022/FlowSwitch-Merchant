@@ -1,30 +1,30 @@
 import { useEffect, useState } from 'react';
-import { merchants as merchantsApi } from '../lib/api';
+import { useSelector } from 'react-redux';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Building2, Mail, Phone } from 'lucide-react';
 import { formatDate } from '../lib/utils';
+import { useItemsListReadrMutation } from "../backend/api/sharedCrud"
+import { selectList } from "../backend/features/sharedMainState"
+
 
 export function Merchants() {
-  const [merchants, setMerchants] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [merchantsPage, setMerchantsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50)
+
+  const [fetchMerchantsFn, {
+    isLoading: merchantsLoading,
+    isSuccess: merchantsFetchSucceeded,
+    isError: merchantsFetchFailed
+  }] = useItemsListReadrMutation()
+
+  const merchants = useSelector(st => selectList(st, "merchant"))
 
   useEffect(() => {
-    loadMerchants();
-  }, []);
+    fetchMerchantsFn({ entity: "merchant", page: merchantsPage, max: pageSize, limit: pageSize });
+  }, [merchantsPage]);
 
-  async function loadMerchants() {
-    try {
-      const data = await merchantsApi.list();
-      setMerchants(data);
-    } catch (error) {
-      console.error('Failed to load merchants:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (loading) {
+  if (merchantsLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="w-8 h-8 border-2 border-[#1F6FEB] border-t-transparent rounded-full animate-spin" />
@@ -39,12 +39,12 @@ export function Merchants() {
           Merchants
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">
-          {merchants.length} total merchants
+          {(merchants || []).length} total merchants
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {merchants.map((merchant) => (
+        {(merchants || []).map((merchant) => (
           <Card key={merchant.guid} className="hover:shadow-md transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -72,7 +72,7 @@ export function Merchants() {
                     Contact: {merchant.contact_name}
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Joined {formatDate(merchant.created_at)}
+                    Joined {formatDate(merchant.createdAt)}
                   </p>
                 </div>
               </div>
