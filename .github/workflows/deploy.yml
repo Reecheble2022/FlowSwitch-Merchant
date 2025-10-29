@@ -21,9 +21,9 @@ jobs:
 
       - name: Install and Build
         run: |
-          npm install
-          npm ci --no-optional
-          npm run build
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm run build
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
