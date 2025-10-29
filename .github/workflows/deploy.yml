@@ -1,32 +1,35 @@
-name: Deploy forms to gh pages
+name: Deploy to GitHub Pages
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
-env: 
-  CI: false
 jobs:
   build-and-deploy:
-    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 🛎️
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure node
-        uses: actions/setup-node@v1
-        with: 
-          node-version: "24.4.0"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install and Build
-        run: |
-          npm install
-          npm ci
-          npm run build
+      - name: Install Dependencies
+        run: npm ci
 
-      - name: Deploy 🚀
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: build
+          folder: dist
           branch: gh-pages
