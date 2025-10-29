@@ -139,7 +139,7 @@ export const buildAgentReport = async (dateRange, agent) => {
 
   const lastMoveKm = computeLastMoveDistance(points);
   const lastTwoDistanceKm = points.length >= 2
-    ? haversineKm([points[0].lat, points[0].lng], [points[1].lat, points[1].lng])
+    ? haversineKm([points[0]?.lat, points[0]?.lng], [points[1]?.lat, points[1]?.lng])
     : 0;
 
   const primaryPlace = primaryCluster
@@ -202,8 +202,13 @@ export const buildAgentReport = async (dateRange, agent) => {
 }
 
 export const buildPortfolioReport = async (filters, agentsList = []) => {
-  const agents = agentsList.filter(agt => agt.merchantGuid === (filters?.merchantId || filters?.merchantGuid))
-
+  const agents = agentsList.filter(agt => {
+    if(filters?.merchantGuid || filters?.merchantId){
+      return agt.merchantGuid === (filters?.merchantGuid || filters?.merchantId)
+    }else{
+      return true
+    }
+  })
   if (!agents || agents.length === 0) {
     return {
       summary: {
