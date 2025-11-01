@@ -47,7 +47,6 @@ export default function AddAgentModal() {
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
   const [merchantSearch, setMerchantSearch] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [age, setAge] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -73,11 +72,9 @@ export default function AddAgentModal() {
         }
       });
       window.dispatchEvent(toastEvent);
-      setIsSubmitting(false);
       resetForm();
       closeModal();
     } else if (agentRegFailed) {
-      setIsSubmitting(false);
       const { data: errorMsg } = agentRegError || {}
       const toastEvent = new CustomEvent('showToast', {
         detail: {
@@ -157,15 +154,19 @@ export default function AddAgentModal() {
 
   const validateForm = () => {
     try {
+      console.log("==>validateForm()->formData.phone =", formData.phone)
       const phoneValid = isValidPhoneNumber(formData.phone, formData.nationality);
       if (!phoneValid) {
         setErrors(prev => ({ ...prev, phone: 'Invalid phone number for selected country' }));
         return false;
       }
+      console.log("==22>validateForm()->formData.phone =", formData.phone)
       agentSchema.parse(formData);
+      console.log("==e>validateForm()->errors =", errors)
       setErrors({});
       return true;
     } catch (error) {
+      console.log("==eeeee", error)
       if (error instanceof z.ZodError) {
         const newErrors = {};
         error.errors.forEach(err => {
@@ -183,14 +184,13 @@ export default function AddAgentModal() {
     if (!validateForm()) {
       return;
     }
-    setIsSubmitting(true);
+    console.log("==>handleSubmit(e)")
     try {
-      const parsedPhone = format(formData.phone, formData.nationality);
       const payload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         category: "Individuals",
-        phone: parsedPhone?.format('E.164') || formData.phone,
+        phone: formData.phone,
         email: formData.email,
         physicalAddress: formData.reportedAddr,
         nationality: formData.nationality,
@@ -260,8 +260,7 @@ export default function AddAgentModal() {
     return null;
   }
 
-  const isFormValid = formData.firstName && formData.lastName && formData.phone &&
-    formData.nationality && Object.keys(errors).length === 0;
+  const isFormValid = formData.firstName && formData.lastName && formData.phone && formData.nationality;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -562,19 +561,19 @@ export default function AddAgentModal() {
               type="button"
               onClick={handleClose}
               className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-              disabled={agentRegProcessing || isSubmitting}
+              disabled={agentRegProcessing}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!isFormValid || agentRegProcessing || isSubmitting}
-              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${isFormValid && !agentRegProcessing && !isSubmitting
+              disabled={!isFormValid || agentRegProcessing}
+              className={`px-6 py-2 rounded-lg font-medium text-white transition-all ${isFormValid && !agentRegProcessing
                 ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:shadow-lg hover:shadow-emerald-500/50'
                 : 'bg-gray-400 cursor-not-allowed'
                 }`}
             >
-              {(agentRegProcessing || isSubmitting) ? 'Creating...' : 'Create Agent'}
+              {(agentRegProcessing) ? 'Creating...' : 'Create Agent'}
             </button>
           </div>
         </form>
